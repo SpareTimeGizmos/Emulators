@@ -1,0 +1,168 @@
+SBC1802 COMMANDS
+-------------------------------------------------------------------------------
+  LO*AD filename             - load binary or .HEX file into RAM or ROM
+  SA*VE filename             - save RAM or ROM to a binary or .HEX file
+     /FORMAT=BINARY|INTEL    - set file format
+     /BAS*E=xxxx             - load/save relative to base address (octal)
+     /COU*NT=nnnnn           - number of bytes to save (decimal)
+     /RA*M                   - load/save data from RAM address space
+     /RO*M                   -   "   "     "    "  ROM    "      "
+     /OVER*WRITE             - don't prompt if file already exists (SAVE only!)
+
+  ATT*ACH DI*SK filename     - attach IDE drive to image file
+  DET*ACH DI*SK              - detach IDE drive
+     /UNIT=0|1               - 0 -> master, 1-> slave
+     /CAPACITY=nnnnn         - set image size, IN SECTORS!
+
+  ATT*ACH TA*PE filename     - attach TU58 drive to image file
+     /UNIT=0|1               - tape drive unit, 0 or 1
+     /CAPACITY=nnnnn         - set tape capacity, IN BLOCKS!
+     /READ                   - make tape unit read only
+     /WRITE                  - allow writing to this unit
+
+  DET*ACH TA*PE              - detach TU58 drive
+     /UNIT=0|1               - tape drive unit, 0 or 1
+
+  E*XAMINE xxxx              - display just address xxxx (hex)
+     xxxx-xxxx               - display all addresses in the range
+     xxxx, xxxx, ...         - display multiple addresses or ranges
+     R0..RF,D,DF,...         - display individual CPU register(s)
+     RE*GISTERS              - display all registers
+     /RA*M                   - display data from RAM address space
+     /RO*M                   -    "      "    "  ROM    "      "
+     /I*NSTRUCTION           - disassemble 1802 instructions
+
+  D*EPOSIT xxxx xx           - deposit one byte
+     xxxx xx, xx, ...        - deposit several bytes
+     Rn xxxx                 - deposit in a register
+     /RA*M                   - deposit data in RAM address space ***
+     /RO*M                   -    "      "   " ROM    "      "   ***
+
+  SE*T BRE*AKPOINT xxxx      - set breakpoint at address (hex)
+  CL*EAR BRE*AKPOINT xxxx    - clear   "      "     "       "
+  SE*T BRE*AKPOINT xxxx-xxxx -  set breakpoint on address range
+  CL*EAR BRE*AKPOINT xxx-xxx - clear  "    "   "    "  "    "
+  CL*EAR BRE*AKPOINTS        - clear all breakpoints
+  SH*OW BRE*AKPOINTS         - show breakpoints
+     /RAM                    - set/clear/show breakpoints in RAM space
+     /ROM                    -  "    "     "    "    "    "  ROM   "
+
+  RU*N [xxxx]                - clear CPU and start running at PC=xxxx
+  C*ONTINUE                  - resume execution at current PC// 
+  ST*EP [nnnn]               - single step and trace nnnn instructions
+  RES*ET                     - reset CPU and all devices
+  INP*UT [xx]                - press INPUT/ATTENTION button
+                               (and optionally load xx into the switches)
+
+  SE*ND /TE*XT <file>        - send <file> as raw text
+     /NOCRLF                 - convert line endings to <CR> only
+     /CRLF                   - don't convert line endings
+     /DEL*AY=(line,char)     - set line and character delays, in milliseconds
+  SE*ND /TE*XT /CL*OSE       - abort any send text in progress
+
+  SE*ND /X*MODEM <file>      - send <file> using XMODEM protocol
+     /DEL*AY=delay           - set character delay, in milliseconds
+  SE*ND /X*MODEM /CL*OSE     - abort any XMODEM transfer in progress
+
+  RE*CEIVE/TE*XT <file>      - send emulation output to a raw text file
+     /APP*END                - append to existing file
+     /OVER*WRITE             - overwrite existing file
+  RE*CEIVE/TE*XT/CL*OSE      - stop logging emulation output
+
+  RE*CEIVE/X*MODEM <file>    - receive <file> using XMODEM protocol
+     /DEL*AY=delay           - set character delay, in milliseconds
+  RE*CEIVE/X*MODEM/CL*OSE    - abort any XMODEM transfer in progress
+
+  SH*OW MEM*ORY              - show memory map for all modes
+  CL*EAR MEM*ORY             - clear ALL of memory (RAM and ROM, not NVR!)
+     /RAM                    - clear RAM address space only ***
+     /ROM                    -   "   ROM    "      "     "  ***
+
+  SH*OW DEV*ICE name         - show details for device <name>
+  SH*OW DEV*ICES             - show list of all devices
+  CL*EAR DEV*ICE name        - reset just device <name>
+  CL*EAR DEV*ICES            - reset all I/O devices only
+  SE*T DEV*ICE name          - set device parameters
+     /TX*SPEED=nnnn          - set SLU transmit speed, in CPS
+     /RX*SPEED=nnnn          -  "   "  receive    "    "   "
+     /SHO*RT=nnnn            - set IDE short delay, in microseconds
+     /LO*NG=nnnn             -  "   "  long    "    "    "    "
+     /SW*ITCHES=xx           - set toggle switches to xx
+     /ENABLE                 - enable TLIO
+     /DISABLE                - disable  "
+
+  SH*OW CPU                  - show CPU details
+  CL*EAR CPU                 - reset the CPU only
+  SE*T CPU
+     /BRE*AK=nnn             - set break character to ASCII code nnn
+     /IO=STOP|IGNORE         - stop or ignore illegal I/O references
+     /OPCODE=STOP|IGNORE     -  "    "   "     "   "  opcodes
+     /[NO]EXTENDED           - enable 1804/5/6 extended instructions
+
+  SH*OW VER*SION             - show software version
+
+
+STANDARD UI COMMANDS
+-------------------------------------------------------------------------------
+  SET WINDOW
+        /TIT*LE="string"     - set window title string
+        /FORE*GROUND=color   - set window foreground color
+        /BACK*GROUND=color   -  "     "   background   "
+        /X=nnn               - set window X position in pixels
+        /Y=nnn               -  "     "   Y     "     "   "
+        /W*IDTH=nn           - set window width in character columns
+        /H*EIGHT=nn          -  "     "   height "     "       "
+
+  SET LOG*GING
+        /FI*LE=filename      - enable logging to a file
+        /NOFI*LE             - disable   "    "  "  "
+        /APP*END             - append to existing log file
+        /OVER*WRITE          - overwrite    "      "   "
+        /LEV*EL=level        - set logging level (with /FILE or /CONSOLE)
+        /CON*SOLE            - enable logging to console terminal
+  SHOW LOG*GING              - show current log settings
+
+#ifdef THREADS
+  SET CHECK*POINT
+        /ENA*BLE             - enable file checkpointing
+        /DISA*BLE            - disable "      "    "
+        /INT*ERVAL=nn        - set checkpointing interval in seconds
+  SHOW CHECK*POINT           - show current checkpoint settings
+#endif
+
+  DEF*INE name "substitution"- define alias commands
+  UNDEF*INE name             - undefule "      "
+  SHOW ALIAS name            - show definition for "name"
+  SHOW ALIAS*ES              - show all aliases
+
+  DO filename                - execute commands from a file
+
+  HELP name                  - show arguments and modifiers for one verb
+  HELP                       - show a list of all verbs
+
+  EXIT                       - terminate the program
+  QUIT                       - ditto
+
+
+STANDARD COMMAND LINE OPTIONS
+-------------------------------------------------------------------------------
+  -d                 - set console message level to DEBUG
+  -l filename        - start logging to a file
+  -x                 - run as a detached process
+  filename           - take commands from a script file
+
+
+NOTES
+-------------------------------------------------------------------------------
+  UPPERCASE names are keywords.  lowercase names are arguments.
+  A "*" indicates the minimum unique abbreviation.
+  "nnnn" is a decimal number
+  "xxxx" is a hexadecimal number
+  "[...]" indicates optional arguments
+  "|" indicates alternative options
+  Register names are R0..RF, D, DF, P, X, I, N, T, IE, Q
+                     EF1, EF2, EF3, EF4, XIE, CIE, CIL, CNTR, CH, ETQ
+  Logging evels are ERR*ORS, WARN*INGS, DEB*UG, TRA*CE
+  Window colors - BLACK, ORANGE, GRAY, BLUE, GREEN, CYAN, RED, MAGENTA,
+  		  YELLOW, WHITE, DARK_BLUE, DARK_GREEN, DARK_CYAN, DARK_RED,
+		  DARK_MAGENTA, LIGHT_GRAY
