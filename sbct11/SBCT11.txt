@@ -1,0 +1,135 @@
+NOTES
+  UPPERCASE names are keywords.  lowercase names are arguments.
+  A "*" indicates the minimum unique abbreviation.
+  "nnnn" is a decimal number
+  "oooooo" is an octal number
+  "[...]" indicates optional arguments
+
+SBCT11 COMMANDS
+---------------
+  LO*AD filename
+  SA*VE filename
+     		/FORMAT=format	- set file format
+		/BAS*E=oooooo	- load/save relative to base address (octal)
+		/COU*NT=nnnnn	- number of bytes to save (decimal)
+		/RA*M		- load/save data from RAM address space
+		/RO*M		-   "   "     "    "  ROM    "      "
+		/NVR		-   "   "     "    "  NVR    "      "
+		/EV*EN		- load/save only even addresses
+		/OD*D		-   "   "     "  odd   "   "
+  Formats - BIN*ARY, IN*TEL, ABS*OLUTE
+
+  ATT*ACH DI*SK filename	- attach IDE drive to image file
+  DET*ACH DI*SK			- detach IDE drive
+          TU*58 filename
+	  /UNIT=
+	  /[NO]WRITE
+	  /CAPACITY=nnnnn
+
+  E*XAMINE oooooo		- display just address oooooo (octal)
+  	   oooooo-oooooo	- display all addresses in the range
+	   oooooo, oooooo, ...	- display multiple addresses or ranges
+	   R0..R5,SP,PC,PSW	- display individual CPU register(s)
+	   RE*GISTERS		- display all registers
+	/W*ORD			- display as PDP-11 words
+	/B*YTE			-   "     "   "     bytes
+	/RA*M			- display data from RAM address space
+	/RO*M			-    "      "    "  ROM    "      "
+	/I*NSTRUCTION		- disassembly PDP-11 instructions
+
+  D*EPOSIT oooooo ooo		- deposit one byte/word
+  	   oooooo ooo, ooo, ...	- deposit several bytes/words
+	   Rn oooooo		- deposit in R0..R5, SP, PC or PSW
+	/W*ORD			- deposit PDP-11 words in memory
+	/B*YTE			-    "      "    bytes "    "
+	/RA*M			- deposit data in RAM address space ***
+	/RO*M			-    "      "   " ROM    "      "   ***
+
+  SE*T BRE*AKPOINT oooooo	- set breakpoint at address (octal)
+  CL*EAR BRE*AKPOINT oooooo	- clear   "      "     "       "
+  CL*EAR BRE*AKPOINTS		- clear all breakpoints
+  SH*OW BRE*AKPOINTS		- show breakpoints
+    	/RAM			- set/clear/show breakpoints in RAM space
+	/ROM			-  "    "     "    "    "    "  ROM   "
+
+  RU*N [oooooo]			- clear CPU and start running at PC=oooooo
+  C*ONTINUE			- resume execution at current PC
+  ST*EP [nnnn]			- single step and trace nnnn instructions
+
+  CL*EAR MEM*ORY		- clear ALL of memory (RAM and ROM, not NVR!)
+  		 /RAM		- clear RAM address space only ***
+  		 /ROM		-   "   ROM    "      "     "  ***
+		 /NVR		- clear NVR only
+  CL*EAR CPU			- reset the CPU only
+  CL*EAR DEV*ICE name
+  CL*EAR DEV*ICES		- reset all I/O devices only ***
+  RE*SET			- reset both CPU and I/O ***
+
+  SE*T CPU
+	  /BRE*AK=nnn		- set break character to ASCII code nnn
+	  /MO*DE=oooooo		- set T11 startup mode register
+
+  SH*OW MEM*ORY		 	- show memory map
+  SH*OW VER*SION	  	- show software version
+  SH*OW CPU		  	- show CPU and PIC state
+  SH*OW DEV*ICE name	  	- show details for one device
+  SH*OW DEV*ICES		- show all devices
+  SH*OW DI*SK			- show IDE emulator details
+  SH*OW TA*PE			- show TU58 emulator details
+
+
+STANDARD UI COMMANDS
+--------------------
+  SET WINDOW /TITle="string"	- set window title string
+  	     /FOREground=color	- set window foreground color
+	     /BACKground=color	-  "     "   background   "
+	     /X=nnn		- set window X position in pixels
+	     /Y=nnn		-  "     "   Y     "     "   "
+	     /Width=nn		- set window width in character columns
+	     /Height=nn		-  "     "   height "     "       "
+  Colors - BLACK, ORANGE, GRAY, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE
+  	   BARK_BLUE, DARK_GREEN, DARK_CYAN, DARK_RED, DARK_MAGENTA, LIGHT_GRAY
+  m_cmdSetWindow
+
+  SET LOGging /FIle=filename	- enable logging to a file
+  	      /NOFIle		- disable   "    "  "  "
+	      /APPend		- append to existing log file
+	      /OVERwrite	- overwrite    "      "   "
+	      /LEVel=level	- set logging level (with /FILE or /CONSOLE)
+	      /CONsole		- enable logging to console terminal
+  SHOW LOGging			- show current log settings
+  Levels - ERRors, WARNings, DEBug, TRAce
+  m_cmdSetLog, m_cmdShowLog
+
+  SET CHECKpoint /ENAble	- enable file checkpointing
+  		 /DISAble	- disable "      "    "
+		 /INTerval=nn	- set checkpointing interval in seconds
+  SHOW CHECKpoint		- show current checkpoint settings
+  m_cmdSetCheckpoint, m_cmdShowCheckpoint
+
+  DEFine name "substitution"	- define alias commands
+  UNDEFine name			- undefule "      "
+  SHOW ALIAS name		- show definition for "name"
+  SHOW ALIASes			- show all aliases
+  m_cmdDefine, m_cmdUndefine, m_cmdShowAliases
+
+  DO filename			- execute commands from a file
+  m_cmdIndirect
+
+  HELP name			- show arguments and modifiers for one verb
+  HELP				- show a list of all verbs
+  m_cmdHelp
+
+  EXIT				- terminate the program
+  QUIT				- ditto
+  m_cmdQuit
+
+
+
+STANDARD COMMAND LINE OPTIONS
+-----------------------------
+  -d		- set console message level to DEBUG
+  -l filename	- start logging to a file
+  -x		- run as a detached process
+  filename	- take commands from a script file
+ 
