@@ -4,17 +4,17 @@
 //   COPYRIGHT (C) 2015-2020 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
 //
 // LICENSE:
-//    This file is part of the ELF2K emulator project.  EMULIB is free
+//    This file is part of the ELF2K emulator project.  ELF2K is free
 // software; you may redistribute it and/or modify it under the terms of
 // the GNU Affero General Public License as published by the Free Software
 // Foundation, either version 3 of the License, or (at your option) any
 // later version.
 //
-//    EMULIB is distributed in the hope that it will be useful, but WITHOUT
+//    ELF2K is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License
 // for more details.  You should have received a copy of the GNU Affero General
-// Public License along with EMULIB.  If not, see http://www.gnu.org/licenses/.
+// Public License along with ELF2K.  If not, see http://www.gnu.org/licenses/.
 //
 // DESCRIPTION:
 //   This class emulates a panel of 8 toggle switches connected to an in;ut

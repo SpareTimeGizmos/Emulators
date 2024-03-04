@@ -1070,10 +1070,9 @@ bool CUI::DoContinue (CCmdParser &cmd)
   // not errors and will not abort a script.
   //--
   CCPU::STOP_CODE nStop = RunSimulation();
-  return    (nStop == CCPU::STOP_ILLEGAL_IO)
-         || (nStop == CCPU::STOP_ILLEGAL_OPCODE)
-         || (nStop == CCPU::STOP_ENDLESS_LOOP)
-         || (nStop == CCPU::STOP_HALT);
+  return    (nStop == CCPU::STOP_HALT)
+         || (nStop == CCPU::STOP_BREAK)
+         || (nStop == CCPU::STOP_BREAKPOINT);
 }
 
 bool CUI::DoRun (CCmdParser &cmd)

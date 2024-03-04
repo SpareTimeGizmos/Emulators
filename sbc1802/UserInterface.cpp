@@ -1,6 +1,8 @@
 //++
 // UserInterface.cpp -> SBC1802 Emulator Specific User Interface code
 //
+//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
+//
 // LICENSE:
 //    This file is part of the SBC1802 emulator project.  SBC1802 is free
 // software; you may redistribute it and/or modify it under the terms of

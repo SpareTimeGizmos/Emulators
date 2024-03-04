@@ -1,6 +1,8 @@
 //++
 // POST.cpp -> DIP Switches and 7 Segment LED Display emulation
 //
+//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
+//
 // LICENSE:
 //    This file is part of the SBC1802 emulator project.  SBC1802 is free
 // software; you may redistribute it and/or modify it under the terms of

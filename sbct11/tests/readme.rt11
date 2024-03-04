@@ -1,0 +1,24 @@
+  To boot RT11 on the SBCT11 (including this simulator!)
+
+	/usr/local/bin/sbct11 rt11
+	SBCT11 Emulator v3 emulator Library v152
+	Built on Mar  4 2024 13:47:10
+	65536 bytes loaded from /home/Gizmos/Software/Emulator/github/Emulators/sbct11/tests/boots11.hex
+	TU58 unit 0 attached to /home/Gizmos/Software/Emulator/github/Emulators/sbct11/tests/rt11.tu58
+	TU58 unit 1 attached to /home/Gizmos/Software/Emulator/github/Emulators/sbct11/tests/work.tu58
+	[Simulation started.  Type CONTROL+E to break.]
+	
+	SBCT11 ROM MONITOR V50  CHECKSUM 170564  BUILD 12:58 31-JAN-2024
+	Copyright (C) 2021 by Spare Time Gizmos.  All rights reserved.
+	RTC: 13:59:44 04-MAR-2024 MON CONTENTS OK
+	For help type HELP
+	
+	>>>SET NXM ON
+	>>>B DD
+	T11: TU58 protocol error, received=0xFF while IDLE
+
+	RT-11SJ (S) V05.03  
+
+	.
+
+Don't forget to type the "SET NXM ON" command to enable bus timeout traps before booting RT11!

@@ -1,6 +1,8 @@
 //++
 // Baud.hpp -> SBC1802 COM8136 Baud Rate Generator emulation
 //
+//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
+//
 // LICENSE:
 //    This file is part of the SBC1802 emulator project.  SBC1802 is free
 // software; you may redistribute it and/or modify it under the terms of

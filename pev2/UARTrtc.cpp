@@ -4,17 +4,17 @@
 //   COPYRIGHT (C) 2015-2020 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
 //
 // LICENSE:
-//    This file is part of the PicoElf emulator project.  EMULIB is free
+//    This file is part of the PicoElf emulator project. PicoElf is free
 // software; you may redistribute it and/or modify it under the terms of
 // the GNU Affero General Public License as published by the Free Software
 // Foundation, either version 3 of the License, or (at your option) any
 // later version.
 //
-//    EMULIB is distributed in the hope that it will be useful, but WITHOUT
+//    PicoElf is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 // FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License
 // for more details.  You should have received a copy of the GNU Affero General
-// Public License along with EMULIB.  If not, see http://www.gnu.org/licenses/.
+// Public License along with PicoElf. If not, see http://www.gnu.org/licenses/.
 //
 // DESCRIPTION:
 //   This module is an emulation of the Spare Time Gizmos UART/RTC expansion
