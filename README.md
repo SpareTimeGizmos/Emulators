@@ -5,7 +5,7 @@
 * Elf2K COSMAC Elf
 * SBC1802 COSMAC SBC
 * SBC6120 PDP-8 SBC
-* PEV2 by Mike Riley
+* PicoElf v2 by Mike Riley
 * SC/MP w/NIBL BASIC SBC
 * S2650 w/PIPBUG SBC
 
