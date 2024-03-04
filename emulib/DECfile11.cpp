@@ -1,6 +1,8 @@
 //++
 // DECfile11.hpp -> DEC Absolute Loader Paper Tape Routines
 //
+//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
+// 
 // LICENSE:
 //    This file is part of the emulator library project.  EMULIB is free
 // software; you may redistribute it and/or modify it under the terms of

@@ -1,4 +1,3 @@
-//IMPLEMENT READ ONLY ERRORS
 //++
 // IDE.cpp -> Simple IDE drive emulation
 //
@@ -95,6 +94,9 @@
 // type doesn't allow for 16 bit transfers.  This module requires that the
 // emulated firmware enable the 8 bit feature, and it'll log a warning message
 // in any 16 bit data transfer is attempted.
+// 
+// TO DO:
+//   IMPLEMENT READ ONLY ERRORS
 //    
 // REVISION HISTORY:
 // 22-JAN-20  RLA   New file.

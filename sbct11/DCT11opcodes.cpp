@@ -1,8 +1,10 @@
 //++
-//Opcodes.cpp -> PDP11 and disassembler
+// DCT11Opcodes.cpp -> PDP11 and disassembler
 //
+//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
+// 
 // LICENSE:
-//    This file is part of the emulator library project.  SBCT11 is free
+//    This file is part of the SBCT11 emulator project.  SBCT11 is free
 // software; you may redistribute it and/or modify it under the terms of
 // the GNU Affero General Public License as published by the Free Software
 // Foundation, either version 3 of the License, or (at your option) any

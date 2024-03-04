@@ -1,21 +1,6 @@
 //++
 // i8255.cpp -> Intel 8255 programmable peripheral interface emulator
 //
-//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
-// 
-// LICENSE:
-//    This file is part of the emulator library project.  EMULIB is free
-// software; you may redistribute it and/or modify it under the terms of
-// the GNU Affero General Public License as published by the Free Software
-// Foundation, either version 3 of the License, or (at your option) any
-// later version.
-//
-//    EMULIB is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License
-// for more details.  You should have received a copy of the GNU Affero General
-// Public License along with EMULIB.  If not, see http://www.gnu.org/licenses/.
-//
 // DESCRIPTION:
 //   This class implements a generic emulation for the Intel 8255 "programmable
 // peripheral interface" (aka PPI).  This device has three 8 bit parallel I/O
@@ -75,7 +60,7 @@
 #include "MemoryTypes.h"        // address_t and word_t data types
 #include "CPU.hpp"              // CPU definitions
 #include "Device.hpp"           // generic device definitions
-#include "i8255-original.hpp"   // declarations for this module
+#include "i8255-Original.hpp"   // declarations for this module
 
 
 C8255::C8255 (const char *pszName, address_t nPort, address_t cPorts, CEventQueue *pEvents)

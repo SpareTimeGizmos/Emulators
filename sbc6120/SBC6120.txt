@@ -1,0 +1,138 @@
+// SBC6120 COMMANDS
+// ---------------
+//   E*XAMINE ooooo             - display just address oooooo (octal)
+//         ooooo-oooo           - display all addresses in the range
+//         ooooo, ooooo, ...    - display multiple addresses or ranges
+//         AC,MQ,L,IF,DF, ...   - display individual CPU register(s)
+//         RE*GISTERS           - display all registers
+//         /M*AIN               - display data from main memory (default)
+//         /P*ANEL              -    "      "    "  control panel memory
+//         /R*OM                -    "      "    "  EPROM
+//         /I*NSTRUCTION        - disassemble 6120 instructions
+//         /ASC*II              - also dump in PDP-8 packed ASCII text
+//         /SIX*BIT             - also dump in PDP-8 SIXBIT text
+//   Registers - AC,MQ,L,IF,DF,??
+// 
+//   D*EPOSIT ooooo oooo        - deposit one word
+//         ooooo oooo, oooo,... - deposit several words
+//         rr xxxx              - deposit in a register
+//         /M*AIN               - deposit data in main memory (default)
+//         /P*ANEL              -    "      "  "  control panel memory
+//         /R*OM                -    "      "  "  EPROM
+//
+//   LO*AD filename             - load binary or .HEX file into RAM or ROM
+//   SA*VE filename             - save RAM or ROM to a binary or .HEX file
+//         /FORMAT=xxxx         - set file format
+//         /BAS*E=ooooo         - load/save relative to base address (octal)
+//         /COU*NT=nnnnn        - number of words to save (decimal)
+//         /M*AIN               - load/save main memory (default)
+//         /P*ANEL              -   "    "  control panel memory
+//         /E*PROM              -   "    "  EPROM
+//         /OVER*WRITE          - don't prompt if file already exists (SAVE only!)
+//   Formats - BINARY, INTEL, ABSOLUTE
+//
+//   SH*OW CPU                  - show CPU details
+//   CL*EAR CPU                 - reset the CPU only
+//   SE*T CPU
+//         /BRE*AK=nnn          - set break character to ASCII code nnn
+//         /IO=STOP|IGNORE      - stop or ignore illegal IOTs
+//         /OPCODE=STOP|IGNORE  -  "    "   "     "   "  opcodes
+//         /STARTUP=MAIN|PANEL  - start execution in main or panel memory
+//         /[NO]HALT            - HLT opcode traps to panel memory
+// 
+//   RU*N [ooooo]               - reset all and start running at IF,PC=ooooo
+//         /SW*ITCHES=oooo      - set switch register to oooo before starting
+//   C*ONTINUE                  - resume execution at current PC/
+//   ST*EP [nnnn]               - single step and trace nnnn instructions
+//   RES*ET                     - reset CPU and all devices
+//
+//   SE*T BRE*AKPOINT ooooo     - set breakpoint at address (octal)
+//   CL*EAR BRE*AKPOINT 00000   - clear   "      "     "       "
+//   CL*EAR BRE*AKPOINTS        - clear all breakpoints
+//   SH*OW BRE*AKPOINTS         - show breakpoints
+//         /M*AIN               - set/clear breakpoint in main memory (default)
+//         /P*ANEL              -  "    "     "    "    " control panel memory
+//         /E*PROM              -  "    "     "    "    " EPROM
+//
+//   CL*EAR MEM*ORY             - clear ALL of memory (MAIN, PANEL and EPROM!)
+//         /M*AIN               - clear MAIN memory only
+//         /P*ANEL              -   "   PANEL "  "    "
+//         /E*PROM              -   "   EPROM "  "    "
+//   SH*OW MEM*ORY              - show memory map for all modes
+//
+//   ATT*ACH IDE|RAM filename   - attach IDE drive or RAM disk to image file
+//   DET*ACH IDE|RAM            - detach IDE drive or RAM disk
+//        /UNIT=m               - select unit number for IDE or RAM disk
+//        /CAPACITY=nnnnn       - set image size, IN SECTORS!
+//
+//   SH*OW DEV*ICE name         - show details for device <name>
+//   SH*OW DEV*ICES             - show list of all devices
+//   CL*EAR DEV*ICE name        - reset just device <name>
+//   CL*EAR DEV*ICES            - reset all I/O devices only
+//   SE*T DEV*ICE name          - set device parameters
+//         /TX*SPEED=nnnn       - set SLU transmit speed, in CPS
+//         /RX*SPEED=nnnn       -  "   "  receive    "    "   "
+//         /SHO*RT=nnnn         - set IDE short delay, in microseconds
+//         /LO*NG=nnnn          -  "   "  long    "    "    "    "
+// 
+//   SH*OW VER*SION             - show software version
+// 
+// STANDARD UI COMMANDS
+// --------------------
+//   SET WINDOW
+//         /TIT*LE="string"     - set window title string
+//         /FORE*GROUND=color   - set window foreground color
+//         /BACK*GROUND=color   -  "     "   background   "
+//         /X=nnn               - set window X position in pixels
+//         /Y=nnn               -  "     "   Y     "     "   "
+//         /W*IDTH=nn           - set window width in character columns
+//         /H*EIGHT=nn          -  "     "   height "     "       "
+//   Colors - BLACK, ORANGE, GRAY, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE
+//         BARK_BLUE, DARK_GREEN, DARK_CYAN, DARK_RED, DARK_MAGENTA, LIGHT_GRAY
+// 
+//   SET LOG*GING
+//         /FI*LE=filename      - enable logging to a file
+//         /NOFI*LE             - disable   "    "  "  "
+//         /APP*END             - append to existing log file
+//         /OVER*WRITE          - overwrite    "      "   "
+//         /LEV*EL=level        - set logging level (with /FILE or /CONSOLE)
+//         /CON*SOLE            - enable logging to console terminal
+//   SHOW LOG*GING              - show current log settings
+//   Levels - ERR*ORS, WARN*INGS, DEB*UG, TRA*CE
+// 
+//   SET CHECK*POINT
+//         /ENA*BLE             - enable file checkpointing
+//         /DISA*BLE            - disable "      "    "
+//         /INT*ERVAL=nn        - set checkpointing interval in seconds
+//   SHOW CHECK*POINT           - show current checkpoint settings
+// 
+//   DEF*INE name "substitution"- define alias commands
+//   UNDEF*INE name             - undefule "      "
+//   SHOW ALIAS name            - show definition for "name"
+//   SHOW ALIAS*ES              - show all aliases
+// 
+//   DO filename                - execute commands from a file
+// 
+//   HELP name                  - show arguments and modifiers for one verb
+//   HELP                       - show a list of all verbs
+// 
+//   EXIT                       - terminate the program
+//   QUIT                       - ditto
+// 
+// 
+// STANDARD COMMAND LINE OPTIONS
+// -----------------------------
+//   -d                 - set console message level to DEBUG
+//   -l filename        - start logging to a file
+//   -x                 - run as a detached process
+//   filename           - take commands from a script file
+// 
+// 
+// NOTES
+// -----
+//   UPPERCASE names are keywords.  lowercase names are arguments.
+//   A "*" indicates the minimum unique abbreviation.
+//   "nnnn" is a decimal number
+//   "xxxx" is a hexadecimal number
+//   "[...]" indicates optional arguments
+// 

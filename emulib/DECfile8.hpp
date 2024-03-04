@@ -1,8 +1,8 @@
 //++
-// DECfile11.hpp -> DEC Absolute Loader Paper Tape Routines
+// DECfile8.hpp -> DEC Absolute Loader Paper Tape Routines
 //
-//   COPYRIGHT (C) 2015-2024 BY SPARE TIME GIZMOS.  ALL RIGHTS RESERVED.
-// 
+//   Copyright (C) 1999-2022 by Spare Time Gizmos.  All rights reserved.
+//
 // LICENSE:
 //    This file is part of the emulator library project.  EMULIB is free
 // software; you may redistribute it and/or modify it under the terms of
@@ -17,8 +17,8 @@
 // Public License along with EMULIB.  If not, see http://www.gnu.org/licenses/.
 //
 // DESCRIPTION:
-//   The CDECfile11 class adds routines to load and save paper tape images in
-// the DEC PDP-11 absolute loader format to the CGenericMemory class.  That's
+//   The CDECfile8 class adds routines to load and save paper tape images in
+// the DEC PDP-8 absolute loader format to the CGenericMemory class.  That's
 // it - nothing more!
 // 
 //   Note that this class cannot be instantiated.  It simply contains a few
@@ -37,23 +37,24 @@ using std::string;              // ...
 // Standard extensions for DEC absolute loader files ...
 #define DEFAULT_PAPERTAPE_FILE_TYPE ".ptp"
 
-class CDECfile11 {
+class CDECfile8 {
   //++
-  // DEC PDP-11 Absolute Loader file support routines ...
+  // DEC PDP-8 Absolute Loader file support routines ...
   //--
 
   // No constructor or destructor here!
 
-  // Load or save the memory in DEC PDP11 absolute loader format ...
 public:
+  // Load or save memory in DEC PDP8 absolute loader format ...
   static int32_t LoadPaperTape (CGenericMemory *pMemory, string sFileName);
   static int32_t SavePaperTape (CGenericMemory *pMemory, string sFileName, address_t wBase=0, size_t cbBytes=0);
+  // Load or save memory as two Intel .hex EPROM images ...
+  static int32_t Load2Intel (CGenericMemory *pMemory, string sFileNameHigh, string sFileNameLow, address_t wBase=0, size_t cbLimit=0, address_t wOffset=0);
+  static int32_t Save2Intel(CGenericMemory* pMemory, string sFileNameHigh, string sFileNameLow, address_t wBase=0, size_t cwLimit=0);
 
   // Private methods ...
 private:
-  // Load or save segments of memory in DEC PDP11 absolute loader format ...
-  static bool GetWord (FILE *pFile, uint16_t &wData, uint8_t &bChecksum);
-  static void PutWord (FILE *pFile, uint16_t  wData, uint8_t &bChecksum);
-  static int32_t LoadPaperTape (uint8_t *pData, string sFileName, size_t cbLimit);
-  static int32_t SavePaperTape (const uint8_t *pData, string sFileName, size_t cbBytes=0, uint16_t wAddress=0);
+  static bool GetByte  (FILE *pFile, uint8_t &bData);
+  static bool GetFrame (FILE *pFile, uint16_t &wFrame, uint16_t &wChecksum);
+  static int32_t LoadSegment (FILE *pFile, CGenericMemory *pMemory, uint16_t &wFrame, uint16_t &wChecksum);
 };
