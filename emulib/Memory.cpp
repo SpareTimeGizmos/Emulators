@@ -71,6 +71,7 @@
 //  3-FEB-20  RLA   Add m_abFlags and generic mapping.
 //  4-JUL-22  RLA   Add memory mapped I/O support.
 // 26-AUG-22  RLA   Clean up Linux/WIN32 conditionals.
+//  5-MAR-24  RLA   Add ClearROM() and change ClearRAM to use IsRAM() ...
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -181,8 +182,16 @@ void CGenericMemory::ClearRAM()
   // locations (e.g. ROM!) unmolested.  Note that this ignores I/O locations!
   //--
   for (size_t i = Base();  i <= Top();  ++i)
-    if ((GetFlags(ADDRESS(i)) & (MEM_WRITE|MEM_IO)) == MEM_WRITE)
-      MemWrite(ADDRESS(i), 0);
+    if (IsRAM(ADDRESS(i))) MemWrite(ADDRESS(i), 0);
+}
+
+void CGenericMemory::ClearROM()
+{
+  //++
+  // Zero the data in every location marked as read only.
+  //--
+  for (size_t i = Base();  i <= Top();  ++i)
+    if (IsROM(ADDRESS(i))) MemWrite(ADDRESS(i), 0);
 }
 
 void CGenericMemory::ClearAllBreaks()

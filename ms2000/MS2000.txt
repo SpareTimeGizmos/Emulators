@@ -1,0 +1,120 @@
+MS2000 COMMANDS
+---------------
+  LO*AD filename             - load binary or .HEX file into memory
+  SA*VE filename             - save memory to a binary or .HEX file
+     /FORMAT=BINARY|INTEL    - set file format
+     /BAS*E=xxxx             - load/save relative to base address (octal)
+     /COU*NT=nnnnn           - number of bytes to save (decimal)
+     /OVER*WRITE             - don't prompt if file already exists (SAVE only!)
+
+  ATT*ACH filename           - attach FDC drive to image file
+  DET*ACH                    - detach FDC drive
+     /UN*IT=0|1|2|3          - floppy diskette drive unit number
+
+  E*XAMINE xxxx              - display just address xxxx (hex)
+     xxxx-xxxx               - display all addresses in the range
+     xxxx, xxxx, ...         - display multiple addresses or ranges
+     R0..RF,D,DF,...         - display individual CPU register(s)
+     RE*GISTERS              - display all registers
+     /I*NSTRUCTION           - disassemble 1802 instructions
+  Registers - R0..RF, D, DF, P, X, I, N, T, IE, Q
+
+  D*EPOSIT xxxx xx           - deposit one byte
+     xxxx xx, xx, ...        - deposit several bytes
+     Rn xxxx                 - deposit in a register
+
+  SE*T BRE*AKPOINT xxxx      - set breakpoint at address (hex)
+  CL*EAR BRE*AKPOINT xxxx    - clear   "      "     "       "
+  SE*T BRE*AKPOINT xxxx-xxxx -  set breakpoint on address range
+  CL*EAR BRE*AKPOINT xxx-xxx - clear  "    "   "    "  "    "
+  CL*EAR BRE*AKPOINTS        - clear all breakpoints
+  SH*OW BRE*AKPOINTS         - show breakpoints
+
+  RU*N [xxxx]                - clear CPU and start running at PC=xxxx
+  C*ONTINUE                  - resume execution at current PC
+  ST*EP [nnnn]               - single step and trace nnnn instructions
+  RES*ET                     - reset CPU and all devices
+ 
+  SH*OW MEM*ORY              - show memory map
+  CL*EAR MEM*ORY             - clear ALL of memory
+     /RAM                    - clear memory except for UT71
+     /ROM                    - clear ONLY UT71
+
+  SH*OW DEV*ICE name         - show details for device <name>
+  SH*OW DEV*ICES             - show list of all devices
+  CL*EAR DEV*ICE name        - reset just device <name>
+  CL*EAR DEV*ICES            - reset all I/O devices only
+  SE*T DEV*ICE name          - set device parameters
+     /TX*SPEED=nnnn          - set SLU transmit speed, in CPS
+     /RX*SPEED=nnnn          -  "   "  receive    "    "   "
+     /STEP=nnnn              - set FDC head step delay (ms)
+     /ROTATIONAL=nnnn        - set FDC rotational delay (ms)
+     /TRANSFER=nnnn          - set FDC data transfer delay (us)
+     /LOAD=nnnn              - set FDC head load time (ms)
+     /UNLOAD=nnnn            - set FDC head unload time (ms)
+     /ENABLE                 - enable TLIO
+     /DISABLE                - disable TLIO
+
+  SH*OW CPU                  - show CPU details
+  CL*EAR CPU                 - reset the CPU only
+  SE*T CPU
+     /BRE*AK=nnn             - set break character to ASCII code nnn
+     /IO=STOP|IGNORE         - stop or ignore illegal I/O references
+     /OPCODE=STOP|IGNORE     -  "    "   "     "   "  opcodes
+     /[NO]EXTENDED           - enable 1804/5/6 extended instructions
+
+  SH*OW VER*SION             - show software version
+
+
+STANDARD UI COMMANDS
+--------------------
+  SET WINDOW
+        /TIT*LE="string"     - set window title string
+        /FORE*GROUND=color   - set window foreground color
+        /BACK*GROUND=color   -  "     "   background   "
+        /X=nnn               - set window X position in pixels
+        /Y=nnn               -  "     "   Y     "     "   "
+        /W*IDTH=nn           - set window width in character columns
+        /H*EIGHT=nn          -  "     "   height "     "       "
+  Colors - BLACK, ORANGE, GRAY, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE
+        DARK_BLUE, DARK_GREEN, DARK_CYAN, DARK_RED, DARK_MAGENTA, LIGHT_GRAY
+
+  SET LOG*GING
+        /FI*LE=filename      - enable logging to a file
+        /NOFI*LE             - disable   "    "  "  "
+        /APP*END             - append to existing log file
+        /OVER*WRITE          - overwrite    "      "   "
+        /LEV*EL=level        - set logging level (with /FILE or /CONSOLE)
+        /CON*SOLE            - enable logging to console terminal
+  SHOW LOG*GING              - show current log settings
+  Levels - ERR*ORS, WARN*INGS, DEB*UG, TRA*CE
+
+  DEF*INE name "substitution"- define alias commands
+  UNDEF*INE name             - undefule "      "
+  SHOW ALIAS name            - show definition for "name"
+  SHOW ALIAS*ES              - show all aliases
+
+  DO filename                - execute commands from a file
+
+  HELP name                  - show arguments and modifiers for one verb
+  HELP                       - show a list of all verbs
+
+  EXIT                       - terminate the program
+  QUIT                       - ditto
+
+STANDARD COMMAND LINE OPTIONS
+-----------------------------
+  -d                 - set console message level to DEBUG
+  -l filename        - start logging to a file
+  -x                 - run as a detached process
+  filename           - take commands from a script file
+
+
+NOTES
+-----
+  UPPERCASE names are keywords.  lowercase names are arguments.
+  A "*" indicates the minimum unique abbreviation.
+  "nnnn" is a decimal number
+  "xxxx" is a hexadecimal number
+  "[...]" indicates optional arguments
+

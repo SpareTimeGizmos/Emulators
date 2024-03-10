@@ -248,7 +248,7 @@ uint1_t CCDP1854::GetSense (address_t nSense, uint1_t bDefault)
   else if (nSense == m_nSenseBRK)
     return ISSET(m_bSTS, STS_DA) ? 1 : 0;
   else
-    return 0;
+    return bDefault;
 }
 
 word_t CCDP1854::DevRead (address_t nRegister)

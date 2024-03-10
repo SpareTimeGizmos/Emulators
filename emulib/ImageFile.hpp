@@ -37,6 +37,8 @@
 // 28-FEB-17  RLA   Make 64 bit clean.
 //  1-JUN-17  RLA   Linux port.
 // 26-AUG-22  RLA   Clean up Linux/WIN32 conditionals.
+//  7-MAR-24  RLA   Add SetSectorSize for CDiskImageFile
+//                  Add CHS addressing for CDiskImageFile
 //--
 #pragma once
 #include <string>               // C++ std::string class, et al ...
@@ -126,7 +128,7 @@ class CDiskImageFile : public CImageFile {
 
 public:
   // Constructor and destructor ...
-  CDiskImageFile (uint32_t lSectorSize);
+  CDiskImageFile (uint32_t lSectorSize, uint16_t nCylinders=0, uint16_t nHeads=0, uint16_t nSectors=0);
   virtual ~CDiskImageFile() {};
   // Disallow copy and assignment operations with CDiskImageFile objects...
 private:
@@ -136,13 +138,43 @@ private:
   // Public methods ...
 public:
   // Return the sector size.
-  uint32_t GetSectorSize() const {return m_lSectorSize;}
+  inline uint32_t GetSectorSize() const {return m_lSectorSize;}
+  //   Set the sector size.  Note that we also reset the capacity to zero;
+  // this will force it to be recalculated the next time GetCapacity()
+  // is called...
+  void SetSectorSize (uint32_t lSectorSize)
+    {m_lSectorSize = lSectorSize;  m_lCapacity = 0;}
+  // Set disk geometry ...
+  void SetSectors   (uint16_t nSectors)   {m_nSectors = nSectors;}
+  void SetHeads     (uint16_t nHeads)     {m_nHeads = nHeads;}
+  void SetCylinders (uint16_t nCylinders) {m_nCylinders = nCylinders;}
+  // Return geometry information ...
+  inline uint16_t GetSectors()    const {return m_nSectors;   }
+  inline uint16_t GetHeads()      const {return m_nHeads;     }
+  inline uint16_t GetCylinders()  const {return m_nCylinders; }
+  // Test C/H/S addresses for validity ...
+  bool IsValidCylinder (uint16_t nCylinder) const {return nCylinder < GetCylinders();}
+  bool IsValidHead (uint16_t nHead) const {return nHead < GetHeads();}
+  bool IsValidSector (uint16_t nSector) const
+    {return (nSector > 0) && (nSector <= GetSectors());}
+  // Convert a C/H/S address to an absolute sector number ...
+  enum {INVALID_SECTOR = 0xFFFFFFFFUL};
+  bool IsValidCHS (uint16_t nCylinder, uint16_t nHead, uint16_t nSector) const;
+  uint32_t CHStoLBA (uint16_t nCylinder, uint16_t nHead, uint16_t nSector) const;
+
   // Read or write sectors ...
-  bool ReadSector  (uint32_t lLBA, void *pData);
+  bool ReadSector (uint32_t lLBA, void *pData);
+  bool ReadSector (uint16_t nCylinder, uint16_t nHead, uint16_t nSector, void *pData)
+    {return ReadSector(CHStoLBA(nCylinder, nHead, nSector), pData);}
   bool WriteSector (uint32_t lLBA, const void *pData);
+  bool WriteSector (uint16_t nCylinder, uint16_t nHead, uint16_t nSector, void *pData)
+    {return WriteSector(CHStoLBA(nCylinder, nHead, nSector), pData);}
   // Get or change the disk capacity (in sectors) ...
   uint32_t GetCapacity() const;
   bool SetCapacity (uint32_t lCapacity, bool fTruncate=false);
+  //   Return the capacity calculated from the CHS information only.  If the
+  // CHS details are not set, this will return zero.
+  uint32_t GetCHScapacity() const {return (uint32_t) m_nCylinders*m_nHeads*m_nSectors;}
 
   // Local methods ...
 protected:
@@ -152,6 +184,9 @@ protected:
   // Local members ...
 protected:
   uint32_t m_lSectorSize;       // disk sector/block size
+  uint16_t m_nSectors;          // sectors per track
+  uint16_t m_nHeads;            // surfaces (heads) per cylinder
+  uint16_t m_nCylinders;        // cylinders per drive
   uint32_t m_lCapacity;         // disk capacity (in sectors!)
 };
 

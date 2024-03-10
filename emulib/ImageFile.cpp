@@ -39,6 +39,14 @@
 // conversion.  Lastly, notice that the disk sector size, ALWAYS in bytes, MUST
 // be specified to the CDiskImage constructor - that's required by SeekSector()
 // to calculate the correct offset.
+// 
+//    CDiskImageFile objects support either LBA or CHS (cylinder/head/sector)
+// addressing.  For CHS addressing you must call SetGeometry() to define the
+// physical disk geometry before any read or write operations.  SetGeometry()
+// is required only for the CalculateLBA() method, and the ReadSector() and
+// WRiteSector() versions that use CHS addressing.  Geometry does is NOT
+// required for disks thst use LBA addressing only.  The sector size, however,
+// must be set in all cases.
 //
 //   The tape image format is identical to the simh TAP format, with a single
 // 32 bit header record stored at the start and end of each logical record.
@@ -73,6 +81,7 @@
 // 28-Sep-17  RLA   In ReadForwardRecord() don't die if we try to read at EOT.
 // 22-JUL-22  RLA   Add SetCapacity() for disk image files ...
 // 26-AUG-22  RLA   Clean up Linux/WIN32 conditionals.
+//  7-MAR-24  RLA   Add CHS addressing to CDiskImageFile.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -299,7 +308,7 @@ bool CImageFile::Truncate ()
 // CDiskImageFile members ...
 ///////////////////////////////////////////////////////////////////////////////
 
-CDiskImageFile::CDiskImageFile (uint32_t lSectorSize)
+CDiskImageFile::CDiskImageFile (uint32_t lSectorSize, uint16_t nCylinders, uint16_t nHeads, uint16_t nSectors)
 {
   //++
   //   Initialize any disk image specific flags.  Note that the sector size
@@ -308,6 +317,28 @@ CDiskImageFile::CDiskImageFile (uint32_t lSectorSize)
   //--
   assert(lSectorSize > 0);
   m_lSectorSize = lSectorSize;  m_lCapacity = 0;
+  m_nCylinders = nCylinders;  m_nHeads = nHeads;  m_nSectors = nSectors;
+}
+
+bool CDiskImageFile::IsValidCHS (uint16_t nCylinder, uint16_t nHead, uint16_t nSector) const
+{
+  //++
+  // Return true if the C/H/S address is valid ...
+  //--
+  return    IsValidCylinder(nCylinder)
+    && IsValidHead(nHead)
+    && IsValidSector(nSector);
+}
+
+uint32_t CDiskImageFile::CHStoLBA (uint16_t nCylinder, uint16_t nHead, uint16_t nSector) const
+{
+  //++
+  // Convert a C/H/S address to an absolute sector number ...
+  //--
+  if (IsValidCHS(nCylinder, nHead, nSector))
+    return ((nCylinder * GetHeads()) + nHead) * GetSectors() + nSector-1;
+  else
+    return INVALID_SECTOR;
 }
 
 bool CDiskImageFile::SeekSector (uint32_t lLBA)
@@ -315,8 +346,7 @@ bool CDiskImageFile::SeekSector (uint32_t lLBA)
   //++
   //   This method will do an fseek() on the image file to move to the correct
   // offset for the specified absolute sector.  The sector size is used to
-  // calculate the correct byte offset - remember that disk images are always
-  // stored uncompressed, so every PP word requires two bytes!
+  // calculate the correct byte offset.
   //
   // Note that we use the 32 bit fseek() here rather than the 64 bit fseek64().
   // That's not really a problem at the moment, since the biggest disk we can
@@ -376,9 +406,18 @@ uint32_t CDiskImageFile::GetCapacity() const
   // sectors or blocks.  It's one more than the maximum LBA that can be passed
   // to ReadSector() or WriteSector().  Note that this gets called fairly often
   // to range check the LBA, so we try to cache the result...
+  // 
+  //   Note that if CHS addressing is defined (i.e. nCylinders, nHeads and
+  // nSectors are not zero) then we'll return a calculated value based entirely
+  // on the defined geometry.  If CHS addressing is NOT defined, then we'll
+  // return a value based on the actual file size.  It's this latter one that's
+  // especially slow.
   //--
   if (m_lCapacity != 0) return m_lCapacity;
-  const_cast<CDiskImageFile *>(this)->m_lCapacity = GetFileLength() / m_lSectorSize;
+  if ((m_nCylinders != 0) && (m_nHeads != 0) && (m_nSectors != 0))
+    const_cast<CDiskImageFile *>(this)->m_lCapacity = GetCHScapacity();
+  else
+    const_cast<CDiskImageFile *>(this)->m_lCapacity = GetFileLength() / m_lSectorSize;
   return m_lCapacity;
 }
 

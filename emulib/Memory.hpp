@@ -206,6 +206,8 @@ public:
     {assert(m_pawMemory != NULL);  memset(m_pawMemory, bData, ByteSize());}
   // Clear only locations marked as writable!
   virtual void ClearRAM();
+  // Clear only locations marked as read only!
+  virtual void ClearROM();
   // Load or save the memory in a raw binary image file ...
   virtual int32_t LoadBinary (string sFileName, address_t wBase=0, size_t cbLimit=0);
   virtual int32_t SaveBinary (string sFileName, address_t wBase=0, size_t cbBytes=0) const;

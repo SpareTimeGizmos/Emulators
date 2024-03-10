@@ -1,0 +1,7 @@
+; Run UT71 and MicroDOS on the MS2000 emulator ...
+SEt LOG/CONSOLE/LEVEL=WARNING
+SHOW MEMORY
+SHOW DEVICE
+LOAD ut71.hex
+ATTACH MicroDOS/unit=0
+RUN 8000
