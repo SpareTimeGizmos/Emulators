@@ -25,6 +25,7 @@
 // REVISION HISTORY:
 //  6-FEB-20  RLA   New file (adapted from the old implementation)
 // 17-JUN-23  RLA   Add Signetics 2651
+// 10-MAR-24  RLA   Add received break support
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -63,6 +64,7 @@ private:
     // Event queue parameters ...
     EVENT_TXDONE  = 1,        // Event queue type for tranmitter done
     EVENT_RXREADY = 2,        //   "     "    "    "  receiver ready
+    EVENT_BRKDONE = 3,        // break condition terminated
   };
 
   // Constructor and destructor ...
@@ -91,6 +93,9 @@ public:
     {assert(nCPS > 0);  SetCharacterDelay(HZTONS(nCPS));}
   void SetTxSpeed (uint32_t nCPS)
     {assert(nCPS > 0);  SetPollDelay(HZTONS(nCPS));}
+  // Get/set the time a received BREAK is asserted ...
+  void SetBreakDelay(uint64_t llDelay) {m_llBreakTime = llDelay;}
+  uint64_t GetBreakDelay() const {return m_llBreakTime;}
 
   // CUART device methods inherited from CDevice ...
 public:
@@ -103,15 +108,20 @@ public:
   virtual bool IsRXbusy() const {return false;}
   virtual void TransmitterDone() {};
   virtual bool IsTXbusy() const {return false;}
+//virtual void SetFramingError() {};
 
   // And these are our methods the UART implementation can call...
   void StartTransmitter (uint8_t bData, bool fLoopback=false);
   void ReceiverReady();
+  bool IsReceivingBreak() const {return m_fReceivingBreak;}
+  void ReceivingBreakDone();
 
   // Private member data...
 protected:
   uint64_t  m_llCharacterTime;  // time (ns) to send one character
   uint64_t  m_llPollingInterval;// time (ns) to send one character
+  uint64_t  m_llBreakTime;      // duration of a received break
+  bool      m_fReceivingBreak;  // TRUE if we are currently receiving a break
   CCPU     *m_pCPU;             // the CPU that owns this UART
   CVirtualConsole *m_pConsole;  // the console window we'll use for I/O
 };

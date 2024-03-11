@@ -29,6 +29,7 @@
 // 23-JUN-22  RLA   If the IE bit in the control register is changed, then
 //                    update our interrupt request status too!
 // 28-FEB-24  RLA   On the 1854, BREAK inhibits the transmitter!
+// 10-MAR-24  RLA   Add received break support
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -117,6 +118,10 @@ uint8_t CCDP1854::ReadSTS()
   //--
   m_fTHRE_IRQ = false;
   UpdateStatus(0, 0);
+  //   If the UART is currently simulating receiving a break character, then
+  // set the framing error bit in the status.  A break condition will cause
+  // a continuous stream of framing errors as long as it persists.
+  if (IsReceivingBreak()) SETBIT(m_bSTS, STS_FE);
   //   If we find THRE set then also clear TSRE, but return the value of the
   // status byte BEFORE we do that.  This is a hack to make TSRE lag behind
   // THRE a little bit.  See TransmitterDone() for more details...
@@ -236,17 +241,17 @@ uint1_t CCDP1854::GetSense (address_t nSense, uint1_t bDefault)
   //++
   //   On the SBC1802 the CDP1854 interrupt request output is wired to the
   // CPU's EF3 input.  That's easy enough to simulate, however on the RCA
-  // MicroBoard CPUs the EF1 input is connected directly to the serial RXD
+  // MicroBoard CPUs the EF4 input is connected directly to the serial RXD
   // line.  MicroDOS uses this to sense when BREAK is pressed on the terminal
-  // and interrupts the current command.  That's a little harder for us to
-  // do since we don't have a literal BREAK function, but instead we'll just
-  // wire up EF1 to test for ANY character waiting in the receiver buffer.
-  // That works well enough for this purpose.
+  // and interrupts the current command.
   //--
   if (nSense == m_nSenseIRQ)
     return m_fIRQ ? 1 : 0;
   else if (nSense == m_nSenseBRK)
-    return ISSET(m_bSTS, STS_DA) ? 1 : 0;
+    //   This returns the raw state of the RXD signal, which some software
+    // uses to detect a break condition.  Note that RXD is normally high (1),
+    // unless we are in a break condition!
+    return IsReceivingBreak() ? 0 : 1;
   else
     return bDefault;
 }

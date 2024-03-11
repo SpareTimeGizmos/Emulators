@@ -143,6 +143,8 @@ public:
   virtual int32_t RawRead (uint8_t *pabBuffer, size_t cbBuffer, uint32_t lTimeout=0) override;
   // Return TRUE if a console break character has been detected ...
   virtual bool IsConsoleBreak (uint32_t lTimeout=0) override;
+  // Return TRUE if a serial break should be sent to the UART ...
+  virtual bool IsReceivingSerialBreak (uint32_t lTimeout = 0) override;
 private:
   // Read one key from the console in raw mode, with a time out ...
   int32_t ReadKey (uint8_t &bData, uint32_t lTimeout=0);
@@ -186,6 +188,7 @@ private:
   // This stuff works on both Linux and Windows ...
   bool     m_fForceExit;            // true to force EOF on next ReadLine()
   bool     m_fConsoleBreak;         // true if console break (^E) found
+  bool     m_fSerialBreak;          // true if the serial break (^B) found
   CCircularBuffer<uint8_t, KEYBUFSIZ> m_KeyBuffer;  // type-ahead buffer
 #if defined(_WIN32)
   //   Notice that there's a little bit of funny stuff going on here.  The

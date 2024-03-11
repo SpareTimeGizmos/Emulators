@@ -32,6 +32,7 @@
 //
 // REVISION HISTORY:
 //  5-MAR-24  RLA   New file.
+// 10-MAR-24  RLA   Implement CRCREAD ...
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -103,9 +104,12 @@ uint8_t C18S651::DMAread()
   // call the COSMAC DoDMAoutput() method to simulate a DMA transfer.  After
   // the transfer we decrement the DMA byte count and, if this was the last
   // byte, call the uPD765 TerminalCount() method to end the operation.
+  // 
+  //    Note that the codes in the DMACTL register are named from the 1802's
+  // point of view, so a DMAread() corresponds to the DMA_WRITE setting (which
+  // asserts the 1802's DMAOUT input).
   //--
-  uint8_t bDMA = m_bDMAcontrol & DMACTL_DMAMASK;
-  if ((bDMA != DMACTL_DMAREAD) && (bDMA != DMACTL_CRCREAD)) return 0xFF;
+  if ((m_bDMAcontrol & DMACTL_DMAMASK) != DMACTL_DMAWRITE) return 0xFF;
   uint8_t bData = m_pCPU->DoDMAoutput();
   if (--m_bDMAcountL != 0) return bData;
   m_bDMAcountL = DMA_BLOCK_SIZE;
@@ -119,11 +123,19 @@ void C18S651::DMAwrite (uint8_t bData)
   //++
   //    This routine is called by the CUPD765 object when it wants to DMA
   // transfer data from the FDC to memory.  From the COSMAC's point of view,
-  // this is a DoDMAinput() method.  Other than that, it's pretty much the
-  // same as the DMAread() method, above ...
+  // this is a DoDMAinput() method and, as above, the DMACTL bits are named
+  // from the 1802's point of view.  That means a DMAwrite() here is a DMAREAD
+  // operation.  This would assert the 1802's DMAIN input.
+  // 
+  //   Also, the CRCREAD DMA setting pretends to read data from the FDC but
+  // the 1802's DMAIN is not asserted and nothing is actually written to RAM.
+  // The data read is simply ignored.  The FDC thinks its reading data though,
+  // and will verify the sector CRC.  MicroDOS uses this to verify that data
+  // was written successfully.
   //--
-  if ((m_bDMAcontrol & DMACTL_DMAMASK) != DMACTL_DMAWRITE) return;
-  m_pCPU->DoDMAinput(bData);
+  uint8_t bDMA = m_bDMAcontrol & DMACTL_DMAMASK;
+  if ((bDMA != DMACTL_DMAREAD) && (bDMA != DMACTL_CRCREAD)) return;
+  if (bDMA == DMACTL_DMAREAD) m_pCPU->DoDMAinput(bData);
   if (--m_bDMAcountL != 0) return;
   m_bDMAcountL = DMA_BLOCK_SIZE;
   if (--m_bDMAcountH != 0) return;

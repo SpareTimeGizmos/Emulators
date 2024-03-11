@@ -168,12 +168,12 @@
 //   * Programmed I/O transfers are NOT implemented
 //   * Head load/unload is NOT implemented
 //   * These commands are not yet implemented
-//     READ DELETED, WRITE DELETED, READ SECTOR ID
-//     READ TRACK, FORMAT TRACK
+//     READ DELETED, WRITE DELETED, READ SECTOR ID, READ TRACK
 //     SCAN EQUAL, SCAN LESS OR EQUAL, SCAN GREATER OR EQUAL
 //
 // REVISION HISTORY:
 //  5-MAR-24  RLA   New file.
+// 10-MAR-24  RLA   Add FORMAT TRACK so the MicroDOS FORMAT program will work.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -247,7 +247,7 @@ void CUPD765::ResetFDC()
   m_bMainStatus = 0;  m_nCurrentByte = 0;
   m_nCommandLength = m_nResultLength = 0;  m_nDataLength = 0;
   m_bCurrentUnit = m_bCurrentHead = m_bCurrentSector = 0;
-  m_bSizeCode = 0; m_fNoDMAmode = false;
+  m_bSizeCode = 0; m_fNoDMAmode = false;  m_bFillByte = 0xEF;
 }
 
 void CUPD765::EventCallback (intptr_t lParam)
@@ -263,6 +263,8 @@ void CUPD765::EventCallback (intptr_t lParam)
     ReadTransfer();
   } else if (lParam == EVENT_WRITE_DATA) {
     WriteTransfer();
+  } else if (lParam == EVENT_FORMAT_NEXT) {
+    FormatNextSector();
   } else if ((lParam >= EVENT_SEEK_DONE) && (lParam < EVENT_SEEK_DONE+MAXUNIT))
     SeekDone(lParam-EVENT_SEEK_DONE);
   else
@@ -791,8 +793,8 @@ void CUPD765::ReadTransfer()
       // Fake a disk read (CRC) error and abort this transfer ...
       m_abST[1] = ST1_DATA_ERROR;  goto abort;
     }
-    LOGF(DEBUG, "uPD765 reading sector C/H/S = %d/%d/%d size %d",
-      CurrentTrack(), m_bCurrentHead, m_bCurrentSector, CurrentSectorSize());
+    LOGF(DEBUG, "uPD765 reading sector unit=%d, C/H/S = %d/%d/%d size %d",
+      m_bCurrentUnit, CurrentTrack(), m_bCurrentHead, m_bCurrentSector, CurrentSectorSize());
     m_nDataLength = CurrentSectorSize();  m_nCurrentByte = 0;
   }
 
@@ -899,8 +901,8 @@ void CUPD765::WriteTransfer()
       // Fake an equipment check error and abort this transfer ...
       UpdateST0(ST0_IC_ABNORMAL|ST0_UNIT_CHECK); goto abort;
     }
-    LOGF(DEBUG, "uPD765 writing sector C/H/S = %d/%d/%d size %d",
-      CurrentTrack(), m_bCurrentHead, m_bCurrentSector, CurrentSectorSize());
+    LOGF(DEBUG, "uPD765 writing uint=%d, sector C/H/S = %d/%d/%d size %d",
+      m_bCurrentUnit, CurrentTrack(), m_bCurrentHead, m_bCurrentSector, CurrentSectorSize());
 
     // Now advance to the next sector ...
     m_nDataLength = CurrentSectorSize();  m_nCurrentByte = 0;
@@ -934,6 +936,160 @@ abort:
   SendResultType1();  return;
 }
 
+bool CUPD765::GetFormatParameter (uint8_t &bData)
+{
+  //++
+  //   This routine is called to read a parameter byte for the FORMAT TRACK
+  // command.  This command transfers, either by DMA or programmed I/O, four
+  // bytes for every sector, and these bytes contain the sector ID information
+  // for the next sector to be written.
+  // 
+  //   It returns TRUE if everything is OK, and FALSE if the format has been
+  // aborted because somebody called TerminalCount().
+  //--
+  if (m_State != ST_BUSY) return false;
+  if (IsDMAmode()) {
+    // DMA transfer mode ...
+    bData = DMAread();
+  } else {
+    // PROGRAMMED I/O MODE NOT IMPLEMENTED YET!!!
+    LOGF(WARNING, "uPD765 programmed I/O mode not implemented");
+    UpdateST0(ST0_IC_ABNORMAL);  return false;
+  }
+  return true;
+}
+
+void CUPD765::DoFormatTrack (CMD_TYPE2 *pCommand)
+{
+  //++
+  //   This routine handles the setup for the FORMAT TRACK command.  This one
+  // uses a "type 2" command packet, and as it's the only one that uses that
+  // particular format, we just decode all the parameters here.  After all is
+  // done, assuming everything checks out, we schedule an EVENT_FORMAT_NEXT
+  // to proceed with actually writing the track.
+  //--
+
+  //   Decode the selected unit and head.  Formatting always starts with 
+  // sector #1.
+  m_bCurrentUnit = pCommand->bHeadUnit & 3;
+  m_bCurrentHead = (pCommand->bHeadUnit >> 2) & 1;
+  m_bCurrentSector = 1;
+
+  // If the selected drive isn't online, then quit now ...
+  if (!IsAttached()) {
+    UpdateST0(ST0_IC_ABNORMAL | ST0_NOTREADY);
+    SendResultType1();  return;
+  }
+
+  // If the unit is write locked, then return the NOT WRITABLE error and quit.
+  if (IsWriteLocked()) {
+    m_abST[1] = ST1_WRT_PROTECT;  UpdateST0(ST0_IC_ABNORMAL);
+    SendResultType1();  return;
+  }
+
+  //   Verify that the sector count AND sector size agree with what we think
+  // the diskette geometry should be.
+  if (pCommand->bSectorCount != CurrentSectors())
+    LOGF(WARNING, "uPD765 FORMAT TRACK sector count %d disagrees with geometry", pCommand->bSectorCount);
+  m_bSizeCode = pCommand->bSizeCode;
+  uint16_t wSize = 128 * (1 << m_bSizeCode);
+  if (wSize != CurrentSectorSize())
+    LOGF(WARNING, "uPD765 FORMAT TRACK sector size %d disagrees with geometry", wSize);
+
+  //  The FORMAT TRACK command allows the host to specify the byte to be used
+  // for filling the data area of each sector.  Save that.
+  m_bFillByte = pCommand->bFillByte;
+
+  // And schedule the EVENT_FORMAT_TRACK to continue ...
+  m_pEvents->Schedule(this, EVENT_FORMAT_NEXT, m_llRotationalDelay);
+  LOGF(DEBUG, "uPD765 FORMAT TRACK unit=%d, track=%d, head=%d, fill=0x%02X",
+    m_bCurrentUnit, CurrentTrack(), m_bCurrentHead, m_bFillByte);
+}
+
+void CUPD765::FormatNextSector()
+{
+  //++
+  //    This is the second part of the FORMAT TRACK command, and it's invoked
+  // once for every sector to be formatted.  At the start of formatting each
+  // sector, the real uPD765 transfers (either by DMA or programmed I/O) four
+  // bytes from the host.  These four bytes give the sector header information
+  // and the size of the sector.  These all have to agree with what we expect
+  // the diskette geometry to look like.
+  // 
+  //    Note that even though our image files don't actually need formatting,
+  // this really does write empty sectors to the image and it will erase any
+  // data there now!
+  // 
+  //    After we've written the last sector we send a type 1 result packet 
+  // back to the host.  If there's an error, such as an I/O error for the image
+  // file, we send an ABNORMAL terminal back instead.  
+  // 
+  //    If the format is aborted early by the host asserting TerminalCount()
+  // then we stop writing and immediately send a success result.  I'm not sure
+  // what the real uPD765 would do if you abort a format, and in real life this
+  // would probably leave the diskette unusable. 
+  //--
+
+  //   Transfer four bytes from the host - track, head, sector, and sector size.
+  // In real life there's probably some short delay between these requests, but
+  // we don't bother emulating that.  Note that if the host aborts the transfer
+  // during this process, we'll call that success.
+  uint8_t bTrack, bHead, bSector, bSizeCode;
+  if (!GetFormatParameter(bTrack))    goto success;
+  if (!GetFormatParameter(bHead))     goto success;
+  if (!GetFormatParameter(bSector))   goto success;
+  if (!GetFormatParameter(bSizeCode)) goto success;
+
+  // The track, head and sector size all have to be what we expect ...
+  if (bTrack != CurrentTrack())
+    LOGF(WARNING, "uPD765 FORMAT TRACK track %d disagrees", bTrack);
+  if (bHead != m_bCurrentHead)
+    LOGF(WARNING, "uPD765 FORMAT TRACK head %d disagrees", bHead);
+  if (bSizeCode != m_bSizeCode)
+    LOGF(WARNING, "uPD765 FORMAT TRACK sector size code %d disagrees", bSizeCode);
+
+  //   Verify that this is the next sector in sequence.  In real life the host
+  // doesn't have to write sectors sequentially, and it's actually useful to do
+  // that because it's how you create a diskette with interleaved sectors.  Our
+  // image files don't support interleave and the sectors are always stored
+  // sequentially, but as long as we respect the sector number the host gives
+  // us all will be well.
+  if (bSector != m_bCurrentSector)
+    LOGF(WARNING, "uPD765 FORMAT TRACK sector %d out of sequence", bSector);
+
+  // Write an empty sector ...
+  memset(m_abBuffer, m_bFillByte, sizeof(m_abBuffer));
+  if (!CurrentImage()->WriteSector(CurrentTrack(), m_bCurrentHead, m_bCurrentSector, m_abBuffer)) {
+    LOGF(WARNING, "uPD765 error writing %s", CurrentImage()->GetFileName().c_str());
+    // Fake an equipment check error and abort this transfer ...
+    UpdateST0(ST0_IC_ABNORMAL | ST0_UNIT_CHECK);  goto abort;
+  }
+  LOGF(DEBUG, "uPD765 formatting sector C/H/S = %d/%d/%d size %d",
+    CurrentTrack(), m_bCurrentHead, m_bCurrentSector, CurrentSectorSize());
+
+  //   Advance to the next sector, and if we've written all the sectors on this
+  // track then we're done.  I don't know how this works if the host tries to
+  // interleave sectors and the last one isn't really the last one, but with
+  // MicroDOS at least we don't have to worry about that.
+  if (++m_bCurrentSector > CurrentSectors()) {
+    //  This is supposed to leave the current sector in the result packet as
+    // the first sector of the track!
+    m_bCurrentSector = 1;  goto success;
+  }
+
+  // We're not done yet - schedule another sector soon...
+  m_pEvents->Schedule(this, EVENT_FORMAT_NEXT, m_llRotationalDelay);
+  return;
+
+  // Here if the transfer is finished, and all is well!
+success:
+  UpdateST0(ST0_IC_NORMAL);  SendResultType1();  return;
+
+  // Here if the transfer failed, and it's bad news ...
+abort:
+  SendResultType1();  return;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////   F D C   R E G I S T E R   A C C E S S   M E T H O D S   //////////
@@ -954,12 +1110,12 @@ void CUPD765::DoCommand()
     case CMD_READ_SECTOR:   DoReadSector      ((CMD_TYPE1 *) &m_abCommand);  break;
     case CMD_WRITE_SECTOR:  DoWriteSector     ((CMD_TYPE1 *) &m_abCommand);  break;
     case CMD_DRIVE_STATE:   DoSenseDriveStatus((CMD_TYPE3 *) &m_abCommand);  break;
-    // Currently unimplemented commands ...
+    case CMD_FORMAT_TRACK:  DoFormatTrack     ((CMD_TYPE2 *) &m_abCommand);  break;
+      // Currently unimplemented commands ...
     case CMD_READ_TRACK:
     case CMD_READ_DELETED:
     case CMD_WRITE_DELETED:
     case CMD_READ_SECTOR_ID:
-    case CMD_FORMAT_TRACK:
     case CMD_SCAN_EQUAL:
     case CMD_SCAN_LE:
     case CMD_SCAN_GE:

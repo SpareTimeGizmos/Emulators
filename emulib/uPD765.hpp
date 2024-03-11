@@ -63,6 +63,7 @@ private:
     // Be sure you allow enough space if you assign new events!!!
     EVENT_READ_DATA     = 100,// delay before reading data from diskette
     EVENT_WRITE_DATA    = 101,// delay before writing data to diskette
+    EVENT_FORMAT_NEXT   = 102,// delay before formatting the next sector
     EVENT_SEEK_DONE     = 110,// Seek complete events for each unit
   };
 
@@ -167,12 +168,12 @@ public:
   typedef struct _CMD_TYPE1 CMD_TYPE1;
   // uPD765 "type 2" command packet (used by FORMAT TRACK) ...
   struct _CMD_TYPE2 {
-    uint8_t bCommand;         // 0 command byte and modifiers
-    uint8_t bHeadUnit;        // 1 head and drive select
-    uint8_t bSectorSize;      // 2 sector length
-    uint8_t bSectorCount;     // 3 number of sectors
-    uint8_t bGapSize;         // 4 length of GAP3
-    uint8_t bFillByte;        // 5 fill byte for sector data
+    uint8_t bCommand;         // command byte and modifiers
+    uint8_t bHeadUnit;        // head and drive select
+    uint8_t bSizeCode  ;      // sector length
+    uint8_t bSectorCount;     // number of sectors
+    uint8_t bGapSize;         // length of GAP3
+    uint8_t bFillByte;        // fill byte for sector data
   };
   typedef struct _CMD_TYPE2 CMD_TYPE2;
   //   uPD765 "type 3" command packet (used by READ ID, SENSE DRIVE STATE, and
@@ -349,6 +350,10 @@ private:
   void ReadTransfer();
   void DoWriteSector (CMD_TYPE1 *pCommand);
   void WriteTransfer();
+  // Handle the FORMAT TRACK command ...
+  bool GetFormatParameter (uint8_t &bData);
+  void DoFormatTrack (CMD_TYPE2 *pCommand);
+  void FormatNextSector();
 
   // Private member data...
 protected:
@@ -356,8 +361,9 @@ protected:
   FDCSTATE  m_State;                    // current FDC state
   uint8_t   m_bMainStatus;              // current status byte for ReadStatus()
   uint8_t   m_abST[MAXSTATUS];          // extended result status bytes
-  bool      m_fNoDMAmode;               // no DMA mode      "    "   "   "    "  "
-  CEventQueue* m_pEvents;            // event queue handler
+  bool      m_fNoDMAmode;               // no DMA (programmed I/O) mode selected
+  uint8_t   m_bFillByte;                // filler byte used by FORMAT TRACK
+  CEventQueue *m_pEvents;               // event queue handler
 
   // Command and result packets ...
   uint8_t   m_nCommandLength;           // expected length of command packet

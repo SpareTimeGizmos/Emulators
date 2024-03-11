@@ -59,9 +59,9 @@ public:
     NUMBER_OF_HEADS   =   1,    // and diskettes are single sided
     // Bits in the CDP18S651 DMA control register (DMACTL_PORT) ...
     DMACTL_NODMA      = 0x00,   // no DMA operation
-    DMACTL_CRCREAD    = 0x01,   // DMA read with CRC
-    DMACTL_DMAREAD    = 0x02,   // DMA read (no CRC calculation)
-    DMACTL_DMAWRITE   = 0x03,   // DMA write
+    DMACTL_CRCREAD    = 0x01,   // dummy DMA read for CRC testing
+    DMACTL_DMAREAD    = 0x03,   // DMA read (DMAinput() for the 1802!)
+    DMACTL_DMAWRITE   = 0x02,   // DMA write (DMAoutput() ... !)
     DMACTL_DMAMASK    = 0x03,   // mask for above DMA bits
     DMACTL_TC         = 0x04,   // assert uPD765 terminal count
     DMACTL_MOTOR      = 0x08,   // enable drive motor

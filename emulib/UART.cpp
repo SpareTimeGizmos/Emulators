@@ -35,6 +35,7 @@
 // 26-AUG-22  RLA   Constructor should test pConsole for NULL, not m_pConsole!
 // 20-NOV-23  RLA   Rewrite the code at ReceiverReady() to always poll for ^E
 // 16-DEC-23  RLA   Add text & XMODEM speeds to ShowDevice()
+// 10-MAR-24  RLA   Add received break support
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -64,6 +65,10 @@ CUART::CUART (const char *pszName, const char *pszType, const char *pszDescripti
   //   The default UART speed is 2000 characters per second.  That's a little
   // more than 19.2kBps (in simulated time, of course).
   m_llCharacterTime = m_llPollingInterval = HZTONS(DEFAULT_SPEED);
+  //   The default time that a serial BREAK condition remains asserted is
+  // 100ms.  That's roughly 1 character time at 110 baud...
+  m_llBreakTime = MSTONS(100);
+  // Clear all the rest of the device state ...
   ClearDevice();
 }
 
@@ -75,6 +80,7 @@ void CUART::ClearDevice()
   // because if we don't schedule polling now then we never will!
   //--
   CDevice::ClearDevice();
+  m_fReceivingBreak = false;
   if (m_pConsole != NULL) m_pConsole->SendSerialBreak(false);
   ScheduleEvent(EVENT_RXREADY, m_llPollingInterval);
 }
@@ -123,13 +129,41 @@ void CUART::ReceiverReady()
   //--
   uint8_t bData;
   if (m_pConsole != NULL) {
+    //   See if a console break (usually ^E) was entered and, if it was, 
+    // interrupt this emulation and return to the command parser.
     if (m_pConsole->IsConsoleBreak()) m_pCPU->Break();
-    if (!IsRXbusy()) {
+    //   If a serial break (not to be confused with the console break
+    // above) was entered, we need to simulate receiving a long space
+    // break condition on this UART.  Set the m_fReceivingBreak flag to
+    // remember that we're in this condition and schedule a future event
+    // to clear that flag.  Note that if we're already in a break state,
+    // then we just ignore further requests until the current one times
+    // out.
+    if (m_pConsole->IsReceivingSerialBreak() && !m_fReceivingBreak) {
+      m_fReceivingBreak = true;
+      ScheduleEvent(EVENT_BRKDONE, m_llBreakTime);
+    }
+    //   And lastly, if the receiver isn't busy then poll for ordinary input.
+    // Notice that we don't poll for input when we're in the receiving break
+    // state - a real UART can't receive anything in that condition!
+    if (!m_fReceivingBreak && !IsRXbusy()) {
       int32_t nRet = m_pConsole->RawRead(&bData, 1);
       if (nRet > 0) UpdateRBR(MASK8(bData));
     }
   }
   ScheduleEvent(EVENT_RXREADY, m_llPollingInterval);
+}
+
+void CUART::ReceivingBreakDone()
+{
+  //++
+  //    This routine will clear the receiving break condition.  It's usually
+  // called by the EventCallback() when the break interval expires, but it can
+  // be called explicitly to terminate the break state early if needed.  That
+  // latter is why we cancel any pending BRKDONE events.
+  //--
+  CancelEvent(EVENT_BRKDONE);
+  m_fReceivingBreak = false;
 }
 
 void CUART::EventCallback (intptr_t lParam)
@@ -138,8 +172,9 @@ void CUART::EventCallback (intptr_t lParam)
   // Handle event callbacks for this device ...
   //--
   switch (lParam) {
-    case EVENT_TXDONE:  TransmitterDone();  break;
-    case EVENT_RXREADY: ReceiverReady();    break;
+    case EVENT_TXDONE:  TransmitterDone();     break;
+    case EVENT_RXREADY: ReceiverReady();       break;
+    case EVENT_BRKDONE: ReceivingBreakDone();  break;
     default: assert(false);
   }
 }

@@ -31,6 +31,7 @@
 // 17-NOV-23  RLA   Separate into our own file
 //                  Add console break handling.  Add IsConsoleBreak() ...
 //                  Change existing RS232 break functions to "...SerialBreak(...)"
+// 10-MAR-24  RLA   Add ReceiveSerialBreak() function.
 //--
 #pragma once
 #include <string>               // C++ std::string class, et al ...
@@ -45,12 +46,19 @@ class CVirtualConsole {
   // Constants ...
 public:
   enum {
-    CHBREAK     = 0x05,         // default console break character (^E)
+    CH_CONSOLE_BREAK = 0x05,  // default console break character (^E)
+#if defined(__linux__)
+    CH_SERIAL_BREAK = 0x02,  // default serial break character (^B)
+#elif defined(_WIN32)
+    CH_SERIAL_BREAK = 0x00,  // Windows uses the PAUSE/BREAK key!
+#endif
   };
 
   // Constructor and destructor ...
 public:
-  CVirtualConsole() {SetConsoleBreak(CHBREAK);};
+  CVirtualConsole (char chConsoleBreak=CH_CONSOLE_BREAK, char chSerialBreak=CH_SERIAL_BREAK) {
+    SetConsoleBreak(chConsoleBreak);  SetSerialBreak(chSerialBreak);
+  }
   virtual ~CVirtualConsole() {};
 private:
   // Disallow copy and assignments!
@@ -76,18 +84,34 @@ public:
   // Return TRUE if a console break was detected ...
   virtual bool IsConsoleBreak (uint32_t lTimeout=0) {return false;}
   // Change (or return) the console break character ...
-  virtual void SetConsoleBreak (uint8_t ch) {assert((ch > 0) && (ch < ' '));  m_chBreak = ch;}
-  virtual uint8_t GetConsoleBreak() const {return m_chBreak;}
+  inline virtual void SetConsoleBreak (uint8_t ch) {assert(ch < ' ');  m_chConsoleBreak = ch;}
+  inline virtual uint8_t GetConsoleBreak() const {return m_chConsoleBreak;}
 
   // Serial Break functions ...
-  // Return TRUE if a BREAK (RS232 long space) is currently detected ...
-  virtual bool IsSerialBreak() {return false;}
+  //   Return TRUE if a BREAK (RS232 long space) is currently detected.  Note
+  // that the IsSendingSerialBreak() and SendSerialBreak() refer to UART ->
+  // console (or TU58, as the case may be) data direction.  This is the UART
+  // transmiting a break to the console/TU58.  In this case the duration of
+  // the break condition is determined by the firmware driving the UART.
+  virtual bool IsSendingSerialBreak() {return false;}
   //   This routine forces the transmitted data to a RS232 space condition thus
   // transmitting a BREAK.  The break condition continues until this routine is
   // called again with false for the parameter.  
   virtual void SendSerialBreak (bool fBreak) {};
+  //   And this function is called when the console/TU58 wants to send a break
+  // conditon to the UART.  It's the reverse data flow direction from above.
+  // The TU58 emulation never uses this, but some emulated systems, notably
+  // the RCA MS2000 use a break sent from the console to interrupt program
+  // execution.  With the Windows and Linux consoles, this is simulated by
+  // pressing some magic key (NOT the same one as the Console Break!) and
+  // that triggers a call to this routine.
+  virtual bool IsReceivingSerialBreak(uint32_t lTimeout=0) {return false;}
+  // Change (or return) the serial break character ...
+  inline virtual void SetSerialBreak (uint8_t ch) {assert(ch < ' ');  m_chSerialBreak = ch;}
+  inline virtual uint8_t GetSerialBreak() const {return m_chSerialBreak;}
 
   // Private member data...
 protected:
-  uint8_t         m_chBreak;        // break emulation character
+  uint8_t m_chConsoleBreak;   // console break emulation character
+  uint8_t m_chSerialBreak;    // character to trigger ReceiveSerialBreak()
 };
