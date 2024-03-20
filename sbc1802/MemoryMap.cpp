@@ -44,7 +44,7 @@
 //       |       |    |       |    |       |    |       |    |       |	
 //       | RAM 1 |    |       |    | EPROM |    | EPROM |    | EPROM |	
 //       |       |    | RAM 1 |    |       |    |       |    |       |	
-// 8400  +-------+    |       |    |       |    |       |    |       |	
+// 8800  +-------+    |       |    |       |    |       |    |       |	
 //       | EPROM |    |       |    |       |    |       |    |       |	
 // 8000  +-------+    +-------+    +-------+    +-------+    +-------+	
 //       |       |    |       |    |       |    |       |    |       |	
@@ -113,6 +113,7 @@
 //    
 // REVISION HISTORY:
 // 17-JUN-22  RLA   New file.
+// 12-MAR-24  RLA   UT71 ROM should extend to $87FF, not $83FF!
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -268,10 +269,10 @@ CMemoryMap::CHIP_SELECT CMemoryMap::ChipSelect (uint8_t bMap, address_t &a)
       return CS_RAM;
   }
 
-  //   Addresses from $8000 to $83FF form the MicroDOS "ROM hole"
+  //   Addresses from $8000 to $87FF form the MicroDOS "ROM hole"
   // in memory.  These are mapped to EPROM in all modes EXCEPT
   // ElfOS mode...
-  if ((a & 0xFC00) == 0x8000) {
+  if ((a & 0xF800) == 0x8000) {
     return (bMap == CMemoryControl::MCR_ELOS) ? CS_RAM : CS_ROM;
   }
 

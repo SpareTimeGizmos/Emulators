@@ -53,10 +53,12 @@
 #define BAUD_PORT       7         // SLU0 and SLU1 baud rate generator
 
 // SBC1802 base board EF bit assignments ...
-#define SLU0_BREAK_EF CCOSMAC::EF1// CDP1854 SLU0 RXD (break detect!)
-#define RTC_IRQ_EF    CCOSMAC::EF2// CDP1879 RTC interrupt request
+//   IMPORTANT - for MicroDOS compatibility, the SLU0 BREAK EF needs to
+// be EF4 and the INPUT_EF needs to be EF1!!
+#define SLU0_BREAK_EF CCOSMAC::EF4// CDP1854 SLU0 RXD (break detect!)
 #define SLU0_IRQ_EF   CCOSMAC::EF3// CDP1854 SLU0 interrupt request
-#define INPUT_EF      CCOSMAC::EF4// INPUT/ATTENTION button
+#define RTC_IRQ_EF    CCOSMAC::EF2// CDP1879 RTC interrupt request
+#define INPUT_EF      CCOSMAC::EF1// INPUT/ATTENTION button
 
 // EXP1802 expansion board ports and groups ...
 #define SLU1_GROUP      4         // SLU1 group (shared with MDU)

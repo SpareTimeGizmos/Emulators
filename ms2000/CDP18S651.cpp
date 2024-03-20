@@ -111,6 +111,8 @@ uint8_t C18S651::DMAread()
   //--
   if ((m_bDMAcontrol & DMACTL_DMAMASK) != DMACTL_DMAWRITE) return 0xFF;
   uint8_t bData = m_pCPU->DoDMAoutput();
+  LOGF(TRACE, "CDP18S651 DMA read address=0x%04X, data=0x%02X",
+    MASK16(m_pCPU->GetRegister(CCOSMAC::REG_R0) - 1), bData);
   if (--m_bDMAcountL != 0) return bData;
   m_bDMAcountL = DMA_BLOCK_SIZE;
   if (--m_bDMAcountH != 0) return bData;
@@ -135,7 +137,11 @@ void C18S651::DMAwrite (uint8_t bData)
   //--
   uint8_t bDMA = m_bDMAcontrol & DMACTL_DMAMASK;
   if ((bDMA != DMACTL_DMAREAD) && (bDMA != DMACTL_CRCREAD)) return;
-  if (bDMA == DMACTL_DMAREAD) m_pCPU->DoDMAinput(bData);
+  if (bDMA == DMACTL_DMAREAD) {
+    LOGF(TRACE, "CDP18S651 DMA write address=0x%04X, data=0x%02X",
+      m_pCPU->GetRegister(CCOSMAC::REG_R0), bData);
+    m_pCPU->DoDMAinput(bData);
+  }
   if (--m_bDMAcountL != 0) return;
   m_bDMAcountL = DMA_BLOCK_SIZE;
   if (--m_bDMAcountH != 0) return;

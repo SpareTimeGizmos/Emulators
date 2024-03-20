@@ -309,7 +309,7 @@ void CTU58::RxFromHost (uint8_t bData)
       LOGF(WARNING, "TU58 protocol error, received=0x%02X, old state=%s", bData, StateToString(m_nState).c_str());
       m_nState = STA_ERROR;  break;
   }
-  LOGS(DEBUG, "TU58 receive from host " << FormatString("0x%02X", bData) <<
+  LOGS(TRACE, "TU58 receive from host " << FormatString("0x%02X", bData) <<
    " - old state " << StateToString(OldState) << " - new state " << StateToString(m_nState));
 }
 
@@ -422,7 +422,7 @@ bool CTU58::TxToHost (uint8_t &bData)
     // And in all other states we have nothing to say ...
     default: return false;
   }
-  LOGS(DEBUG, "TU58 send to host " << FormatString("0x%02X", bData) <<
+  LOGS(TRACE, "TU58 send to host " << FormatString("0x%02X", bData) <<
     " - old state " << StateToString(OldState) << " - new state " << StateToString(m_nState));
   return true;
 }
