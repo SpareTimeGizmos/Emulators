@@ -1171,7 +1171,7 @@ void CUPD765::WriteData (uint8_t bData)
     // Add this byte to the command buffer ...
     m_abCommand[m_nCurrentByte++] = bData;
     if (m_nCurrentByte >= m_nCommandLength) DoCommand();
-  } else if (m_State = ST_READ_DATA) {
+  } else if (m_State == ST_READ_DATA) {
     // Add this byte to the data buffer ...
     // PROGRAMMED I/O NOT YET IMPLEMENTED!.
   } else {

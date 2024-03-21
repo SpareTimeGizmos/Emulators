@@ -135,7 +135,6 @@ private:
   // SET, SHOW and CLEAR BREAKPOINT commands ...
   static CCmdArgument * const m_argsSetBreakpoint[];
   static CCmdArgument * const m_argsClearBreakpoint[];
-  static CCmdModifier * const m_modsRAMROM[];
   static CCmdVerb m_cmdSetBreakpoint, m_cmdShowBreakpoint, m_cmdClearBreakpoint;
 
   // RESET, RUN, CONTINUE, STEP and INPUT commands ....

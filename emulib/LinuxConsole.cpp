@@ -277,8 +277,11 @@ int32_t CConsoleWindow::ReadKey (uint8_t &bData, uint32_t lTimeout)
   if (FD_ISSET(STDIN_FILENO, &rdfs)) {
     ssize_t cbRead = read(STDIN_FILENO, &bData, 1);
     assert(cbRead == 1);
-    // Check for console break character ...
-    if ((m_chBreak != 0) && (bData == m_chBreak)) {
+    if ((GetSerialBreak() != 0) && (bData == GetSerialBreak())) {
+      // Serial break character - simulate a RS232 break condition ...
+      m_fSerialBreak = true;  return 0;
+    } else if ((GetConsoleBreak() != 0) && (bData == GetConsoleBreak())) {
+      // Console break character - interrupt emulation ...
       m_fConsoleBreak = true;  return 0;
     } else
       return (bData != 0) ? 1 : 0;
@@ -307,6 +310,36 @@ bool CConsoleWindow::IsConsoleBreak (uint32_t lTimeout)
   // Now return the state of the console break flag, and also clear it ...
   bool fBreak = m_fConsoleBreak;
   m_fConsoleBreak = false;
+  return fBreak;
+}
+
+bool CConsoleWindow::IsReceivingSerialBreak (uint32_t lTimeout)
+{
+  //++
+  //   Return TRUE if the serial break flag is set (i.e. the PAUSE/BREAK key
+  // has been pressed) and then clear the flag.  Despite the confusing names,
+  // this is different from the Console Break condition (^E) which interrupts
+  // emulation and returns input to the command parser.  A serial break
+  // simulates pressing the BREAK key on an ASCII terminal connected to a UART.
+  // Some software, notably RCA MicroDOS for the MS2000, uses this break
+  // condition to interrupt programs.
+  // 
+  //    Like the m_fConsoleBreak flag, m_fSerialBreak is set by ReadKey() as
+  // we receive keyboard input.  And like IsConsoleBreak(), this routine
+  // will call ReadKey() until there are no more keystrokes waiting.  That's
+  // necessary becasuse the emulated program may have stopped polling for
+  // keyboard input, but we still want to detect the serial break condition.
+  // It's probably pointless though, because anything that calls this routine
+  // will most likely call IsConsoleBreak() first, and that will have already
+  // processed any keystrokes waiting.
+  //--
+
+  // First poll for any keyboard input ...
+  uint8_t bData;
+  while (ReadKey(bData, lTimeout) > 0) m_KeyBuffer.Put(bData);
+
+  // Now return the state of the serial break flag, and also clear it ...
+  bool fBreak = m_fSerialBreak;  m_fSerialBreak = false;
   return fBreak;
 }
 
