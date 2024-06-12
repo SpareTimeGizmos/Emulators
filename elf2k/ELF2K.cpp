@@ -61,18 +61,19 @@
 // you'll find "extern ..." declarations for them in ELF2K.hpp.  Note that they
 // are declared as pointers rather than the actual objects because we want
 // to control the exact order in which they're created and destroyed!
-CSmartConsole   *g_pConsole     = NULL; // console file transfer functions
-CLog            *g_pLog         = NULL; // message logging object (including console!)
-CCmdParser      *g_pParser      = NULL; // command line parser
+CSmartConsole    *g_pConsole    = NULL; // console file transfer functions
+CLog             *g_pLog        = NULL; // message logging object (including console!)
+CCmdParser       *g_pParser     = NULL; // command line parser
 // These globals point to the objects being emulated ...
-CCOSMAC         *g_pCPU         = NULL; // 1802 COSMAC CPU
-CEventQueue     *g_pEvents      = NULL; // list of things to do
-CGenericMemory  *g_pMemory      = NULL; // memory emulation
-CTIL311         *g_pTIL311      = NULL; // ELF2K POST display
-CSwitches       *g_pSwitches    = NULL; // ELF2K toggle switches
-CUART           *g_pUART        = NULL; // generic UART (e.g. CDP1854)
-CDiskUARTrtc    *g_pDiskUARTrtc = NULL; // Disk/UART/RTC card
-CSoftwareSerial *g_pSerial      = NULL; // software serial port
+CCOSMAC          *g_pCPU        = NULL; // 1802 COSMAC CPU
+CEventQueue      *g_pEvents     = NULL; // list of things to do
+CSimpleInterrupt *g_pInterrupt  = NULL; // simple wire-OR interrupt system
+CGenericMemory   *g_pMemory     = NULL; // memory emulation
+CTIL311          *g_pTIL311     = NULL; // ELF2K POST display
+CSwitches        *g_pSwitches   = NULL; // ELF2K toggle switches
+CUART            *g_pUART       = NULL; // generic UART (e.g. CDP1854)
+CDiskUARTrtc     *g_pDiskUARTrtc= NULL; // Disk/UART/RTC card
+CSoftwareSerial  *g_pSerial     = NULL; // software serial port
 
 
 static bool ConfirmExit (CCmdParser &cmd)
@@ -129,7 +130,8 @@ int main (int argc, char *argv[])
   g_pMemory->SetRAM(RAMBASE, RAMBASE+RAMSIZE-1);
 //g_pMemory->SetRAM(RAMBASE, 8192-1);
   g_pMemory->SetROM(ROMBASE, ROMBASE+ROMSIZE-1);
-  g_pCPU = DBGNEW CCOSMAC(g_pMemory, g_pEvents);
+  g_pInterrupt = DBGNEW CSimpleInterrupt();
+  g_pCPU = DBGNEW CCOSMAC(g_pMemory, g_pEvents, g_pInterrupt);
 //g_pDisplay = DBGNEW CDisplay(PORT_POST);
 //g_pSwitches = DBGNEW CSwitches(PORT_SWITCHES);
 //g_pCPU->InstallDevice(g_pDisplay);
@@ -165,6 +167,7 @@ shutdown:
   // Delete all our global objects.  Once again, the order here is important!
   delete g_pParser;         // the command line parser can go away first
   delete g_pCPU;            // the COSMAC CPU
+  delete g_pInterrupt;      // the interrupt system
   delete g_pMemory;         // the memory object
   delete g_pConsole;        // lastly (always lastly!) close the console window
   delete g_pLog;            // close the log file

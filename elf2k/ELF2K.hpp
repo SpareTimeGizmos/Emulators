@@ -47,7 +47,7 @@
 #define PORT_SWITCHES       4     // Switches (input only)
 #define PORT_VIDEO_80       5     // 80 column video secondary port
 #define PORT_PORT_GPIO      6     // GPIO/PS2 keyboard base port
-//#define PORT_CDP1854      2     // Microboard CDP1854 port
+#define PORT_CDP1854        2     // Microboard CDP1854 port
 //                          7     // GPIO/PS2 secondary port
 
 // Console, log file and command parser objects.
@@ -59,11 +59,12 @@ extern class CSmartConsole   *g_pConsole;     // console window (with file trans
 // emulated - CPU, memory, switches, display, peripherals, etc.  They're all
 // declared in the ELF2K cpp file and are used by the UI to implement various
 // commands (e.g. "SET UART ...", "SHOW POST ...", "SET SWITCHES ...", etc).
-extern class CCOSMAC         *g_pCPU;         // 1802 COSMAC CPU
-extern class CEventQueue     *g_pEvents;      // list of things to do
-extern class CGenericMemory  *g_pMemory;      // memory emulation
-extern class CTIL311         *g_pTIL311;      // ELF2K POST display
-extern class CSwitches       *g_pSwitches;    // ELF2K toggle switches
-extern class CUART           *g_pUART;        // generic UART (e.g. CDP1854)
-extern class CDiskUARTrtc    *g_pDiskUARTrtc; // ELF2K Disk/UART/RTC card
-extern class CSoftwareSerial *g_pSerial;      // software serial port
+extern class CCOSMAC          *g_pCPU;        // 1802 COSMAC CPU
+extern class CEventQueue      *g_pEvents;     // list of things to do
+extern class CSimpleInterrupt *g_pInterrupt;  // simple wire-OR interrupt system
+extern class CGenericMemory   *g_pMemory;     // memory emulation
+extern class CTIL311          *g_pTIL311;     // ELF2K POST display
+extern class CSwitches        *g_pSwitches;   // ELF2K toggle switches
+extern class CUART            *g_pUART;       // generic UART (e.g. CDP1854)
+extern class CDiskUARTrtc     *g_pDiskUARTrtc;// ELF2K Disk/UART/RTC card
+extern class CSoftwareSerial  *g_pSerial;     // software serial port

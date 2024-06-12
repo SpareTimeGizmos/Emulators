@@ -31,6 +31,8 @@
 // 21-DEC-23  RLA   Add two level I/O.
 // 23-DEC-23  RLA   All second UART and TU58.
 // 27-FEB-24  RLA   Add AY-3-8912.
+// 31-MAY-24  RLA   When closing, delete the console first, then the log file.
+//                  Delete all the initial console window size and color settings.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -211,11 +213,11 @@ int main (int argc, char *argv[])
 
   //   Set the console window defaults - foreground and background color,
   // scrolling buffer size, title, and icon ...
-  g_pConsole->SetTitle("SBC1802 Emulator v%d", SBCVER);
+  //g_pConsole->SetTitle("SBC1802 Emulator v%d", SBCVER);
   //m_pConsole->SetIcon(IDI_ELF);
-  g_pConsole->SetBufferSize(132, 2000);
-  g_pConsole->SetWindowSize(80, 40);
-  g_pConsole->SetColors(CConsoleWindow::YELLOW, CConsoleWindow::BLACK);
+  //g_pConsole->SetBufferSize(132, 2000);
+  //g_pConsole->SetWindowSize(80, 40);
+  //g_pConsole->SetColors(CConsoleWindow::YELLOW, CConsoleWindow::BLACK);
 
   // We're finally ready to say hello ...
   CMDOUTF("SBC1802 Emulator v%d emulator Library v%d", SBCVER, EMUVER);
@@ -266,8 +268,10 @@ int main (int argc, char *argv[])
 
   // Lastly we can get rid of the log file, console window and event queue.
 shutdown:
+  //   Note that the SmartConsole uses the log file to debug messages, so
+  // it's critical to delete the console first, then the log file!
+  delete g_pConsole;  // close the console window
   delete g_pLog;      // close the log file
-  delete g_pConsole;  // lastly (always lastly!) close the console window
   delete g_pEvents;   // the event queue
 #ifdef _DEBUG
 #ifdef _WIN32

@@ -193,6 +193,7 @@
 // 16-JUN-22  RLA   Adapted from ELF2K.
 // 28-JUL-22  RLA   FindDevice() doesn't work for SET DEVICE
 // 23-DEC-23  RLA   All second UART and TU58.
+// 17-MAY-24  RLA   ShowSense EF numbers are off by 1
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -1567,10 +1568,11 @@ string CUI::ShowDeviceSense (const CDevice *pDevice)
   if (nGroup == 0) return "";
   for (address_t nEF = CCOSMAC::EF1;  nEF <= CCOSMAC::EF4;  ++nEF) {
     if (g_pTLIO->FindSenseDevice(nGroup, nEF) == pDevice) {
+      address_t n = nEF - CCOSMAC::EF1 + 1;
       if (fFirst)
-        sResult = FormatString("EF%d", nEF);
+        sResult = FormatString("EF%d", n);
       else
-        sResult += FormatString(",%d", nEF);
+        sResult += FormatString(",%d", n);
       fFirst = false;
     }
   }

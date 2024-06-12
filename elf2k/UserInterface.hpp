@@ -139,7 +139,9 @@ private:
   static CCmdVerb m_cmdDetachSerial, m_cmdAttachSerial;
   static CCmdVerb m_cmdAttachTIL311, m_cmdDetachTIL311;
   static CCmdVerb m_cmdAttachSwitches, m_cmdDetachSwitches;
-//static CCmdVerb m_cmdAttachCDP1854, m_cmdDetachCDP1854;
+#ifdef INCLUDE_CDP1854
+  static CCmdVerb m_cmdAttachCDP1854, m_cmdDetachCDP1854;
+#endif
   static CCmdVerb * const g_aAttachVerbs[];
   static CCmdVerb * const g_aDetachVerbs[];
   static CCmdVerb m_cmdAttach, m_cmdDetach;
@@ -203,7 +205,9 @@ private:
   static bool DoDetachIDE(CCmdParser &cmd), DoDetachDS12887(CCmdParser &cmd), DoDetachINS8250(CCmdParser &cmd);
   static bool DoAttachSerial(CCmdParser &cmd), DoDetachSerial(CCmdParser &cmd);
   static bool DoAttachTIL311(CCmdParser &cmd), DoDetachTIL311(CCmdParser &cmd), DoDetachCombo(CCmdParser &cmd);
-//static bool DoAttachCDP1854(CCmdParser &cmd), DoDetachCDP1854(CCmdParser &cmd);
+#ifdef INCLUDE_CDP1854
+  static bool DoAttachCDP1854(CCmdParser &cmd), DoDetachCDP1854(CCmdParser &cmd);
+#endif
   static bool DoAttachSwitches(CCmdParser &cmd), DoDetachSwitches(CCmdParser &cmd);
   static bool DoShowConfiguration(CCmdParser &cmd), DoSetMemory(CCmdParser &cmd);
   static bool DoClearRAM(CCmdParser &cmd), DoClearMemory(CCmdParser &cmd), DoClearNVR(CCmdParser &cmd);
@@ -215,7 +219,9 @@ private:
   // Other "helper" routines ...
   static bool IsINS8250installed(), IsDS12887installed(), IsIDEinstalled();
   static bool IsSerialInstalled(), IsTIL311Installed(), IsSwitchesInstalled();
-//static bool IsCDP1854Installed();
+#ifdef INCLUDE_CDP1854
+  static bool IsCDP1854Installed();
+#endif
   static void DumpLine (address_t nStart, size_t cbBytes, unsigned nIndent=0, unsigned nPad=0);
   static void DoExamineRange (address_t nStart, address_t nEnd);
   static size_t DoExamineInstruction (address_t nStart);

@@ -21,6 +21,7 @@
 //
 // REVISION HISTORY:
 // 18-JUN-22  RLA   New file.
+// 12-JUN-24  RLA   Suppress Apple C++ warning for AcknowledgeRequest ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -103,10 +104,22 @@ public:
 public:
   // Return TRUE if any interrupt is requested ...
   virtual bool IsRequested() const override;
+  // Clear all interrupt requests ...
+  virtual void ClearInterrupt() override { ClearDevice(); }
+  //   The Apple C++ compiler complains about the next declaration because
+  // it hides the overloaded AcknowledgeRequest(IRQLEVEL ...) declaration
+  // in the CPriorityInterrupt class.  That's not actually a problem for the
+  // CDP1877 implementation, but to make the Apple compiler happy we'll
+  // suppress that warning...
+#if defined(__APPLE__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
+#endif
   // Acknowledge an interrupt request ...
   virtual void AcknowledgeRequest() override {};
-  // Clear all interrupt requests ...
-  virtual void ClearInterrupt() override {ClearDevice();}
+#if defined(__APPLE__)
+#pragma clang diagnostic pop
+#endif
 
   // CDP1877 device methods from CDevice ...
 public:

@@ -59,7 +59,7 @@
 #include "Switches.hpp"         // toggle switch register emulation
 #include "SoftwareSerial.hpp"   // bit banged serial port emulation
 #include "INS8250.hpp"          // UART emulation
-//#include "CDP1854.hpp"          // and another UART emulation
+#include "CDP1854.hpp"          // and another UART emulation
 #include "DS12887.hpp"          // NVR/RTC emulation
 #include "IDE.hpp"              // IDE emulation
 #include "DiskUARTrtc.hpp"      // ELF2K Disk/UART/RTC card emulation
@@ -189,8 +189,10 @@ CCmdVerb CUI::m_cmdDetachINS8250("INS8250", &DoDetachINS8250);
 CCmdVerb CUI::m_cmdAttachDS12887("DS12887", &DoAttachDS12887, NULL, m_modsAttach);
 CCmdVerb CUI::m_cmdDetachDS12887("DS12887", &DoDetachDS12887);
 CCmdVerb CUI::m_cmdDetachCombo("COMBO", &DoDetachCombo);
-//CCmdVerb CUI::m_cmdAttachCDP1854("CDP1854", &DoAttachCDP1854, NULL, m_modsAttach);
-//CCmdVerb CUI::m_cmdDetachCDP1854("CDP1854", &DoDetachCDP1854);
+#ifdef INCLUDE_CDP1854
+CCmdVerb CUI::m_cmdAttachCDP1854("CDP1854", &DoAttachCDP1854, NULL, m_modsAttach);
+CCmdVerb CUI::m_cmdDetachCDP1854("CDP1854", &DoDetachCDP1854);
+#endif
 CCmdVerb CUI::m_cmdAttachSerial("SER*IAL", &DoAttachSerial, m_argsAttachSerial, m_modsAttach);
 CCmdVerb CUI::m_cmdDetachSerial("SER*IAL", &DoDetachSerial);
 CCmdVerb CUI::m_cmdAttachTIL311("TIL311", &DoAttachTIL311, NULL, m_modsAttach);
@@ -199,12 +201,18 @@ CCmdVerb CUI::m_cmdAttachSwitches("SWIT*CHES", &DoAttachSwitches, NULL, m_modsAt
 CCmdVerb CUI::m_cmdDetachSwitches("SWIT*CHES", &DoDetachSwitches);
 CCmdVerb * const CUI::g_aAttachVerbs[] = {
   &m_cmdAttachINS8250, &m_cmdAttachDS12887, &m_cmdAttachIDE,
-  /*&m_cmdAttachCDP1854,*/ &m_cmdAttachSerial, &m_cmdAttachTIL311, &m_cmdAttachSwitches,
+#ifdef INCLUDE_CDP1854
+  &m_cmdAttachCDP1854,
+#endif
+  &m_cmdAttachSerial, &m_cmdAttachTIL311, &m_cmdAttachSwitches,
   NULL
 };
 CCmdVerb * const CUI::g_aDetachVerbs[] = {
   &m_cmdDetachINS8250, &m_cmdDetachDS12887, &m_cmdDetachIDE, &m_cmdDetachCombo,
-  /*&m_cmdDetachCDP1854,*/ &m_cmdDetachSerial, &m_cmdDetachTIL311, &m_cmdDetachSwitches,
+#ifdef INCLUDE_CDP1854
+  &m_cmdDetachCDP1854,
+#endif
+  &m_cmdDetachSerial, &m_cmdDetachTIL311, &m_cmdDetachSwitches,
   NULL
 };
 CCmdVerb CUI::m_cmdAttach("ATT*ACH", NULL, NULL, NULL, g_aAttachVerbs);
@@ -644,7 +652,7 @@ bool CUI::DoReceiveFile (CCmdParser &cmd)
 ////////////////////////// ATTACH and DETACH COMMANDS //////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
 bool CUI::IsCDP1854Installed()
 {
   //++
@@ -738,7 +746,7 @@ bool CUI::DoAttachIDE (CCmdParser &cmd)
   //   Install the IDE drive and attach it to an external image file, after
   // first installing the Disk/UART/RTC card if necessary ...
   //--
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
   if (IsCDP1854Installed()) {
     CMDERRS("CDP1854 already installed");  return false;
   }
@@ -781,7 +789,7 @@ bool CUI::DoAttachDS12887 (CCmdParser &cmd)
   // card if necessary.  Note that the NVR is initialized to all zeros - you
   // can load it from a file with the "LOAD NVR" command if desired ...
   //--
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
   if (IsCDP1854Installed()) {
     CMDERRS("CDP1854 already installed");  return false;
   }
@@ -830,7 +838,7 @@ bool CUI::DoAttachINS8250 (CCmdParser &cmd)
   //   Note that you can't have both the UART and the Software Serial installed
   // at the same time.  It's one console option or the other.
   //--
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
   if (IsCDP1854Installed()) {
     CMDERRS("CDP1854 already installed");  return false;
   }
@@ -963,7 +971,7 @@ bool CUI::DoDetachSwitches (CCmdParser &cmd)
   return true;
 }
 
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
 bool CUI::DoAttachCDP1854 (CCmdParser &cmd)
 {
   //++
@@ -984,8 +992,10 @@ bool CUI::DoAttachCDP1854 (CCmdParser &cmd)
   }
   uint8_t nPort = PORT_CDP1854;
   if (m_modPortNumber.IsPresent()) nPort = m_argPortNumber.GetNumber();
-  g_pUART = DBGNEW CCDP1854("SLU", nPort, g_pEvents, g_pSmartConsole, g_pCPU);
+  g_pUART = DBGNEW CCDP1854("SLU", nPort, g_pEvents, g_pConsole, g_pCPU, CCOSMAC::EF3);
   g_pCPU->InstallDevice(g_pUART);
+  g_pCPU->InstallSense(g_pUART, CCOSMAC::EF3);
+  g_pUART->AttachInterrupt(g_pInterrupt);
   return true;
 }
 
@@ -1583,7 +1593,7 @@ bool CUI::DoShowConfiguration (CCmdParser &cmd)
             sInvert.c_str(),
             g_pSerial->GetBaud(), NSTOUS(g_pSerial->GetPollDelay()));
   }
-#ifdef UNUSED
+#ifdef INCLUDE_CDP1854
   if (IsCDP1854Installed()) {
     CMDOUTF("%s  DELAY=%ldus, POLL=%ldus", ShowOneDevice(g_pUART).c_str(),
             NSTOUS(g_pUART->GetCharacterDelay()), NSTOUS(g_pUART->GetPollDelay()));
