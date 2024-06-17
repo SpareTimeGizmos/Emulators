@@ -80,7 +80,7 @@
 #include <assert.h>             // assert() (what else??)
 #if defined(_WIN32)
 #include <io.h>                 // _chsize(), _fileno(), etc...
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
 #include <unistd.h>             // ftruncate(), etc ...
 #include <sys/stat.h>           // needed for fstat() (what else??)
 #endif
@@ -306,7 +306,7 @@ int32_t CGenericMemory::LoadBinary (uint8_t *pData, string sFileName, size_t cbL
   if (err != 0) return FileError(sFileName, "opening", err);
 #if defined(_WIN32)
   size_t cbFile = _filelength(_fileno(pFile));
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   struct stat st;
   if (fstat(fileno(pFile), &st) != 0) return FileError(sFileName, "fstat", errno);
   size_t cbFile = st.st_size;

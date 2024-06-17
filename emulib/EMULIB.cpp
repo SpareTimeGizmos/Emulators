@@ -48,7 +48,7 @@
 #include <winsock2.h>           // socket interface declarations ...
 #pragma comment(lib, "ws2_32.lib")  // force the winsock2 to be loaded
 #pragma comment(lib, "Winmm.lib")   // force the multimedia library to be loaded
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
 #include <unistd.h>             // usleep(), access(), R_OK, etc ...
 #include <netinet/in.h>         // Internet in_addr definitions
 #include <libgen.h>
@@ -69,7 +69,7 @@ void _sleep_ms(uint32_t nDelay)
   //--
 #if defined(_WIN32)
   Sleep(nDelay);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   usleep(nDelay*1000);
 #endif
 }
@@ -87,7 +87,7 @@ void CheckAffinity(void)
   GetProcessAffinityMask(GetCurrentProcess(), &dwProcessAffinity, &dwSystemAffinity);
   if (dwProcessAffinity != dwSystemAffinity)
     LOGS(WARNING, "CURRENT AFFINITY SETTING BLOCKS USE OF ALL PROCESSORS!");
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   // Currently there is no Linux version!!
   assert(false);
 #endif
@@ -126,7 +126,7 @@ void SetTimerResolution (unsigned int uResolution)
 
 failed:
   LOGS(WARNING, "UNABLE TO CHANGE SYSTEM TIME RESOLUTION!");
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   // Currently there is no Linux version!
   assert(false);
 #endif
@@ -140,7 +140,7 @@ void RestoreTimerResolution (void)
 #if defined(_WIN32)
   if (m_uTimerResolution != 0) timeEndPeriod(m_uTimerResolution);
   m_uTimerResolution = 0;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   // Currently there is no Linux version!
   assert(false);
 #endif
@@ -169,7 +169,7 @@ bool SplitPath (const char *pszPath, string &sDrive, string &sDirectory, string 
   if (err != 0) return false;
   sDrive = szDrive;  sDirectory = szDirectory;
   sFileName = szFileName;  sExtension = szExtension;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   //   And now the Linux version.  Note that the dirname() and basename()
   // library functions are a bit, well, funky.  dirname() modifies the caller's
   // buffer by replacing the last "/" in the path with a null and then it
@@ -215,7 +215,7 @@ string MakePath (const char *pszDrive, const char *pszDirectory, const char *psz
     pszDrive, pszDirectory, pszFileName, pszExtension);
   if (err != 0) return string("");
   return string(szPath);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   string sPath = string(pszDirectory) + "/"
                + string(pszFileName)
                + string(pszExtension);
@@ -243,7 +243,7 @@ string FullPath (const char *pszRelativePath)
 #if defined(_WIN32)
   char szAbsolutePath[_MAX_PATH+1];
   if (_fullpath(szAbsolutePath, pszRelativePath, sizeof(szAbsolutePath)) == NULL) return string("");
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   char szAbsolutePath[PATH_MAX];
   if (realpath(pszRelativePath, szAbsolutePath) == NULL) {
     //   realpath() will return an error status if the specified file doesn't
@@ -266,7 +266,7 @@ bool FileExists (const char *pszPath)
   if (dwAttrib == INVALID_FILE_ATTRIBUTES) return false;
   if (ISSET(dwAttrib, FILE_ATTRIBUTE_DIRECTORY)) return false;
   return true;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   return (access(pszPath, F_OK) == 0);
 #endif
 }

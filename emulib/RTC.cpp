@@ -111,7 +111,7 @@ void CRTC::GetNow (uint8_t &bSeconds, uint8_t &bMinutes, uint8_t &bHours,
 #if defined(_WIN32)
   __time64_t llTime;  struct tm tmNow;
   _time64(&llTime);  _localtime64_s(&tmNow, &llTime);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   time_t lTime;  struct tm tmNow;
   time(&lTime);  localtime_r(&lTime, &tmNow);
 #endif

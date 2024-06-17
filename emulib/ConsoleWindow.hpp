@@ -177,7 +177,7 @@ private:
   // "Attach" this class instance to the current console window ..
   void AttachCurrentConsole();
   void DetachCurrentConsole();
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   // Select raw or cooked console mode ...
   void RawMode();
   void CookedMode();
@@ -210,7 +210,7 @@ private:
   uint16_t m_wOriginalBufferHeight; //   "   "     "    height (lines)
   uint8_t  m_bOriginalForeground;   // original foreground color
   uint8_t  m_bOriginalBackground;   //   "   "  background   "
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   bool            m_fRawMode;       // TRUE if the terminal is in raw mode
   struct termios *m_pCookedAttr;    // original (pre-raw) terminal mode
   struct termios *m_pRawAttr;       // attributes used for raw mode
