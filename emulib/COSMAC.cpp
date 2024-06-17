@@ -35,6 +35,7 @@
 // 22-Aug-22  RLA  We don't need or want to implement MasterClear().
 //                 We want to implement ClearCPU() instead!
 // 20-DEC-23  RLA  Add default parameter to GetSense() for TLIO
+// 17-JUL-24  RLA  LDC is wrong - should set m_CNTR = m_D if stopped
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -404,7 +405,7 @@ void CCOSMAC::DoCounter()
     case OP_DTC:  DecrementCounter();            break;
     case OP_LDC:  m_CH = m_D;
                   if (m_CTmode == CT_STOPPED) {
-                    m_CNTR = m_CNTR;  m_CIR = 0;
+                    m_CNTR = m_D;  m_CIR = 0;
                   }
                   break;
     case OP_GEC:  m_D = m_CNTR;                     break;
