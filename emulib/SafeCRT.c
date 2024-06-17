@@ -114,8 +114,12 @@ int strerror_s (char *pszBuffer, size_t cbBuffer, int nError)
   // If that happens we have to copy the string to the caller's buffer!
   //--
   memset(pszBuffer, 0, cbBuffer);
+#if defined(__APPLE__)
+  strerror_r(nError, pszBuffer, cbBuffer);
+#else
   char *pszResult = strerror_r(nError, pszBuffer, cbBuffer);
   if (pszResult != pszBuffer) strcpy_s(pszBuffer, cbBuffer, pszResult);
+#endif
   return 0;
 }
 

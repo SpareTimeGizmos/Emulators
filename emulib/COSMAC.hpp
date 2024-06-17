@@ -24,6 +24,7 @@
 // 14-AUG-19  RLA   New file.
 // 21-JUN-22  RLA   Add the EFx and Q constants
 // 27-JUL-22  RLA   Add 1804/5/6 registers and Extended mode option
+// 17-JUN-24  RLA   Add "override" to GetSenseName and GetFlagName
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -98,10 +99,10 @@ public:
   // CCOSMAC properties ...
 public:
   // Get a constant string for the CPU name, type or options ...
-  const char *GetDescription() const  override {return "8 bit microprocessor";}
+  const char *GetDescription() const override {return "8 bit microprocessor";}
   const char *GetName() const  override {return "COSMAC";}
   // Get the CPU's simulated crystal frequency in MHz ...
-  uint32_t GetCrystalFrequency() const  override {return CLOCK_FREQUENCY;}
+  uint32_t GetCrystalFrequency() const override {return CLOCK_FREQUENCY;}
   // Get the address of the next instruction to be executed ...
   address_t GetPC() const override;
   // Get or set the extended (1804/5/6) instruction set support ...
@@ -168,8 +169,8 @@ private:
   void UpdateQ (uint1_t bNew);
   uint1_t UpdateEF (uint16_t nSense);
 public:
-  const char *GetFlagName (uint16_t nFlag=0) const {return "Q";}
-  const char *GetSenseName (uint16_t nSense=0) const
+  const char *GetFlagName (uint16_t nFlag=0) const override {return "Q";}
+  const char *GetSenseName (uint16_t nSense=0) const override
     {assert(nSense<MAXSENSE);  return g_apszSenseNames[nSense];}
   // Set the default state for unconnected EF inputs ...
   void SetDefaultEF (uint16_t nEF, uint1_t nDefault)
