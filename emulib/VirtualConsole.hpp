@@ -47,12 +47,12 @@ class CVirtualConsole {
 public:
   enum {
     CH_CONSOLE_BREAK = 0x05,  // default console break character (^E)
-#if defined(__linux__)
-    CH_SERIAL_BREAK = 0x02,  // default serial break character (^B)
-#elif defined(_WIN32)
-    CH_SERIAL_BREAK = 0x00,  // Windows uses the PAUSE/BREAK key!
-#endif
-  };
+    #if defined(__linux__)  || defined(__APPLE__) || defined(__unix__)
+      CH_SERIAL_BREAK = 0x02,  // default serial break character (^B)
+    #elif defined(_WIN32)
+      CH_SERIAL_BREAK = 0x00,  // Windows uses the PAUSE/BREAK key!
+    #endif
+  }; 
 
   // Constructor and destructor ...
 public:
