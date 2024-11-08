@@ -57,7 +57,9 @@
 #include <string.h>             // strcpy(), strerror(), etc ...
 #include <cstring>              // needed for memset()
 #include <time.h>               // _localtime64_s(), localtime_r(), ...
+#if !defined(_WIN32)
 #include <sys/time.h>           // AW Defines gettimeofday()
+#endif
 #include <sys/timeb.h>          // struct __timeb, ftime(), etc ...
 #include "EMULIB.hpp"           // emulator library definitions
 #include "SafeCRT.h"		// replacements for Microsoft "safe" CRT functions
