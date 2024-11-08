@@ -163,7 +163,7 @@ bool CCDP1851::InterruptMask (uint8_t bData, uint8_t bMask, uint8_t bIntFn)
     if ((bIntFn == CTL_INT_AND) || (bIntFn == CTL_INT_NAND))
       bInterrupt &= bDB;
     else
-      bInterrupt |= bDB;  break;
+      bInterrupt |= bDB;
   }
   if ((bIntFn == CTL_INT_NAND) || (bIntFn == CTL_INT_NOR))
     bInterrupt ^= 1;

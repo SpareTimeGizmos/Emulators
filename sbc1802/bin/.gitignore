@@ -1,5 +1,0 @@
-# Used by the compiler/linker to create sbc1802 binary. 
-# Ignore everything in this directory. 
-*
-# Except this file
-!.gitignore

@@ -267,7 +267,7 @@ CLog::SEVERITY CLog::GetFileLevel() const
   //--
 #if defined(_WIN32)
   _ftime64_s(ptb);
-#elif defined(__linux__) 
+#elif defined(__linux__)
   ftime(ptb);
 #elif defined(__APPLE__) || defined(__unix__)
   gettimeofday(ptb, NULL);
@@ -283,17 +283,15 @@ CLog::SEVERITY CLog::GetFileLevel() const
   // the date is not.  That'll probably change at some point.  
   //--
 #if defined(_WIN32)
-  struct tm tmNow;  
-  char szNow[16];
-  _localtime64_s(&tmNow, &(ptb->tv_sec));
-  sprintf_s(szNow, sizeof(szNow), "%02d:%02d:%02d.%03ld",
-    tmNow.tm_hour, tmNow.tm_min, tmNow.tm_sec, (long)(ptb->tv_usec / 1000));
+  struct tm tmNow;  char szNow[16];
+  _localtime64_s(&tmNow, &(ptb->time));
+  sprintf_s(szNow, sizeof(szNow), "%02d:%02d:%02d.%03hu",
+    tmNow.tm_hour, tmNow.tm_min, tmNow.tm_sec, ptb->millitm);
 #elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
-  struct tm tmNow;  
-  char szNow[16];
-  localtime_r(&(ptb->tv_sec), &tmNow);
-  snprintf(szNow, sizeof(szNow), "%02d:%02d:%02d.%03ld",
-    tmNow.tm_hour, tmNow.tm_min, tmNow.tm_sec, (long)(ptb->tv_usec / 1000));
+  struct tm tmNow;  char szNow[16];
+  localtime_r(&(ptb->time), &tmNow);
+  snprintf(szNow, sizeof(szNow), "%02d:%02d:%02d.%03u",
+              tmNow.tm_hour, tmNow.tm_min, tmNow.tm_sec, ptb->millitm);
 #endif
   return string(szNow);
 }
@@ -314,7 +312,7 @@ CLog::SEVERITY CLog::GetFileLevel() const
 #if defined(_WIN32)
   int32_t nInterval = (int32_t) _difftime64(ptb2->time, ptb1->time);
 #elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
-    int32_t nInterval = (int32_t) difftime(ptb2->tv_sec, ptb1->tv_sec);
+  int32_t nInterval = (int32_t) difftime(ptb2->time, ptb1->time);
 #endif
   if (nInterval < 0) nInterval = -nInterval;
 
