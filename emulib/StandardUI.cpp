@@ -252,7 +252,7 @@ bool CStandardUI::DetachProcess (string sCommand)
   // these handles has no effect on the child process!
   CloseHandle(pi.hProcess);  CloseHandle(pi.hThread);
   return true;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   // TBA TODO NYI!!!
   assert(false);
   return false;

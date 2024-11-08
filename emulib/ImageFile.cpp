@@ -93,7 +93,7 @@
 #include <cstring>              // needed for memset()
 #if defined(_WIN32)
 #include <io.h>                 // _chsize(), _fileno(), etc...
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
 #include <unistd.h>             // ftruncate(), etc ...
 #include <sys/stat.h>           // needed for fstat() (what else??)
 #include <sys/file.h>           // flock(), LOCK_EX, LOCK_SH, et al ...
@@ -166,7 +166,7 @@ bool CImageFile::TryOpenAndLock (const char *pszMode, int nShare)
 #if defined(_WIN32)
   m_pFile = _fsopen(m_sFileName.c_str(), pszMode, nShare);
   return (m_pFile != NULL);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   m_pFile = fopen(m_sFileName.c_str(), pszMode);
   if (m_pFile == NULL) return false;
   int lock = (nShare == SHARE_NONE) ? LOCK_EX : LOCK_SH;
@@ -242,7 +242,7 @@ void CImageFile::Close ()
   // we'll spell it out for completeness...
   //--
   if (IsOpen()) {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__unix__)
     flock(fileno(m_pFile), LOCK_UN);
 #endif
     fclose(m_pFile);
@@ -258,7 +258,7 @@ uint32_t CImageFile::GetFileLength() const
   assert(IsOpen());
 #if defined(_WIN32)
   return _filelength(_fileno(m_pFile));
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   struct stat st;
   if (fstat(fileno(m_pFile), &st) == 0) return st.st_size;
   Error("fstat", errno);  return 0;
@@ -285,7 +285,7 @@ bool CImageFile::SetFileLength (uint32_t nNewLength)
   if (IsReadOnly()) return false;
 #if defined(_WIN32)
   if (_chsize(_fileno(m_pFile), nNewLength) == 0) return true;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__unix__)
   if (ftruncate(fileno(m_pFile), nNewLength) == 0) return true;
 #endif
   return Error("change size", errno);

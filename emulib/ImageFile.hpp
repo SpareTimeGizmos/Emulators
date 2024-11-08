@@ -72,6 +72,14 @@ public:
     SHARE_NONE  = -1,           // no sharing (i.e. exclusive access)
     SHARE_WRITE =  1,           // or sharing (shared read and write!)
     SHARE_READ  = SHARE_WRITE   // there's no other option!
+#elif defined(__APPLE__)
+    SHARE_NONE  = 0,            // no sharing (i.e. exclusive access)
+    SHARE_READ  = 1,            // shared reading
+    SHARE_WRITE = 2             // shared writing
+#elif defined(__unix__)
+    SHARE_NONE  = 0,            // no sharing (i.e. exclusive access)
+    SHARE_READ  = 1,            // shared reading
+    SHARE_WRITE = 2             // shared writing
 #endif
   };
 

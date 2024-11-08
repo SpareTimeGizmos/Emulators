@@ -110,6 +110,10 @@ public:
   typedef struct __timeb64 TIMESTAMP;
 #elif defined(__linux__)
   typedef struct timeb TIMESTAMP;
+#elif defined(__APPLE__)
+  typedef struct timeval TIMESTAMP;
+#elif defined(__unix__)
+  typedef struct timeb TIMESTAMP;
 #endif
 
   // Constructors and destructor ...
