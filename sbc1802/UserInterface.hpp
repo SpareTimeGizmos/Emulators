@@ -86,6 +86,7 @@ private:
   static CCmdArgNumber      m_argUnit, m_argCapacity;
   static CCmdArgNumber      m_argTxSpeed, m_argRxSpeed;
   static CCmdArgNumber      m_argLongDelay, m_argShortDelay;
+  static CCmdArgNumber      m_argFrequency;
 
   // Modifier definitions ...
 private:
@@ -97,6 +98,7 @@ private:
   static CCmdModifier m_modIllegalOpcode;
   static CCmdModifier m_modIllegalIO;
   static CCmdModifier m_modCPUextended;
+  static CCmdModifier m_modClockFrequency;
   static CCmdModifier m_modROM;
   static CCmdModifier m_modCapacity;
   static CCmdModifier m_modUnit;

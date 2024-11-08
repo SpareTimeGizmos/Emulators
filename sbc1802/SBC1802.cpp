@@ -33,6 +33,10 @@
 // 27-FEB-24  RLA   Add AY-3-8912.
 // 31-MAY-24  RLA   When closing, delete the console first, then the log file.
 //                  Delete all the initial console window size and color settings.
+// 31-OCT-24  RLA   Add CDP1854 PPI.
+//                  Add second AY-3-8912 PSG and CTwoPSGs class.
+//  2-NOV-24  RLA   Add CDP1878 counter/timer
+//  6-NOV-24  RLA   Make CPU clock frequency programmable
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -67,6 +71,11 @@
 #include "ElfDisk.hpp"          // SBC1802/ELF2K to IDE interface
 #include "TU58.hpp"             // TU58 drive emulator
 #include "PSG.hpp"              // AY-3-8912 programmable sound generator
+#include "TwoPSGs.hpp"          // SBC1802 implementation of two PSGs
+#include "PPI.hpp"              // generic programmable I/O definitions
+#include "CDP1851.hpp"          // CDP1851 programmable I/O interface
+#include "Timer.hpp"            // generic counter/timer emulation
+#include "CDP1878.hpp"          // CDP1878 counter/timer
 #include "UserInterface.hpp"    // SBC1802 user interface parse table definitions
 
 
@@ -96,7 +105,11 @@ CCDP1877        *g_pPIC         = NULL; // CDP1877 programmable interrupt contro
 // Extension board devices ...
 CCDP1854        *g_pSLU1        = NULL; // secondary UART (for TU58)
 CTU58           *g_pTU58        = NULL; // TU58 drive emulator
-CPSG            *g_pPSG         = NULL; // AY-3-8912 programmable sound generator
+CPSG            *g_pPSG1        = NULL; // AY-3-8912 programmable sound generator #1
+CPSG            *g_pPSG2        = NULL; // AY-3-8912 programmable sound generator #2
+CTwoPSGs        *g_pTwoPSGs     = NULL; // SBC1802 implementation of two PSGs
+CCDP1851        *g_pPPI         = NULL; // CDP1851 programmable I/O interface
+CCDP1878        *g_pCTC         = NULL; // CDP1878 counter/timer
 
 
 static bool ConfirmExit (CCmdParser &cmd)
@@ -127,6 +140,7 @@ static void CreateBaseBoard()
   g_pMCR = DBGNEW CMemoryControl(MCRBASE, g_pPIC);
   g_pMemoryMap = DBGNEW CMemoryMap(g_pRAM, g_pROM, g_pMCR, g_pRTC, g_pPIC);
   g_pCPU = DBGNEW CCOSMAC(g_pMemoryMap, g_pEvents, g_pPIC);
+  g_pCPU->SetCrystalFrequency(CPUCLK);
 
   //   Create the two level I/O controller and attach it to ALL seven CPU I/O
   // instructions plus all four EF inputs.  The Q output, which isn't really
@@ -172,6 +186,7 @@ static void CreateBaseBoard()
 static void CreateExtensionBoard()
 {
   //++
+  // Create all the expansion board peripherals ...
   //--
 
   // SLU1 and the TU58 drive ...
@@ -182,9 +197,29 @@ static void CreateExtensionBoard()
   g_pTLIO->InstallSense(SLU1_GROUP, g_pSLU1, SLU1_IRQ_EF);
   g_pTLIO->InstallSense(SLU1_GROUP, g_pSLU1, SLU1_SID_EF);
 
-  // Programmable sound generator ...
-  g_pPSG = DBGNEW CPSG("PSG", PSG_PORT, g_pEvents);
-  g_pTLIO->InstallDevice(PSG_GROUP, g_pPSG);
+  // CDP1851 programmable I/O interface ...
+  g_pPPI = DBGNEW CCDP1851("PPI", PPI_PORT, g_pEvents, PPI_ARDY_EF, PPI_BRDY_EF, PPI_IRQ_EF, PPI_IRQ_EF);
+  g_pPPI->AttachInterruptA(g_pPIC->GetLevel(IRQ_PPI));
+  g_pPPI->AttachInterruptB(g_pPIC->GetLevel(IRQ_PPI));
+  g_pTLIO->InstallDevice(PPI_GROUP, g_pPPI);
+  g_pTLIO->InstallSense(PPI_GROUP, g_pPPI, PPI_ARDY_EF);
+  g_pTLIO->InstallSense(PPI_GROUP, g_pPPI, PPI_BRDY_EF);
+  g_pTLIO->InstallSense(PPI_GROUP, g_pPPI, PPI_IRQ_EF);
+
+  // Programmable sound generators ...
+  g_pPSG1 = DBGNEW CPSG("PSG1", PSG1_PORT, g_pEvents);
+  g_pPSG2 = DBGNEW CPSG("PSG2", PSG2_PORT, g_pEvents);
+  g_pTwoPSGs = DBGNEW CTwoPSGs(g_pPSG1, g_pPSG2, g_pEvents);
+  g_pTLIO->InstallDevice(PSG_GROUP, g_pTwoPSGs);
+
+  // CDP1878 counter/timer ...
+  g_pCTC = DBGNEW CCDP1878("CTC", g_pEvents, TIMER_IRQ_EF);
+  g_pCTC->SetClockA(g_pCPU->GetCrystalFrequency());
+  g_pCTC->SetClockB(BAUDCLK/4UL);
+
+  g_pCTC->AttachInterrupt(g_pPIC->GetLevel(IRQ_TIMER));
+  g_pTLIO->InstallDevice(TIMER_GROUP, g_pCTC);
+  g_pTLIO->InstallSense(TIMER_GROUP, g_pCTC, TIMER_IRQ_EF);
 }
 
 int main (int argc, char *argv[])
@@ -247,7 +282,11 @@ int main (int argc, char *argv[])
   delete g_pParser;   // the command line parser can go away first
 
   // First delete the extension board peripherals ...
-  delete g_pPSG;      // programmable sound generator
+  delete g_pCTC;      // CDP1878 counter/timer
+  delete g_pTwoPSGs;  // two PSG implementation
+  delete g_pPSG2;     // programmable sound generator #1
+  delete g_pPSG1;     // programmable sound generator #1
+  delete g_pPPI;      // CDP1851 programmable I/O interface
   delete g_pSLU1;     // secondary serial line unit (for TU58)
   delete g_pTU58;     // TU58 tape emulator
 

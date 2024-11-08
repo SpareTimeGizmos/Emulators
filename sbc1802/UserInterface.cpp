@@ -125,6 +125,7 @@
 //      /IO=STOP|IGNORE         - stop or ignore illegal I/O references
 //      /OPCODE=STOP|IGNORE     -  "    "   "     "   "  opcodes
 //      /[NO]EXTENDED           - enable 1804/5/6 extended instructions
+//      /CLO*CK=nnnnnnnnn       - set CPU clock frequency (in Hz!)
 //
 //   SH*OW VER*SION             - show software version
 //
@@ -194,6 +195,14 @@
 // 28-JUL-22  RLA   FindDevice() doesn't work for SET DEVICE
 // 23-DEC-23  RLA   All second UART and TU58.
 // 17-MAY-24  RLA   ShowSense EF numbers are off by 1
+// 30-OCT-24  RLA   Add two PSGs
+// 31-OCT-24  RLA   Add PPI
+//  2-NOV-24  RLA   Add counter/timer
+//  6-NOV-24  RLA   TLIO broke SHOW CPU interrupt channels
+//                  Add SET CPU/CLOCK=nnnnnnnnnn
+//  7-NOV-24  RLA   Change /ENABLE and /DISABLE to ENABLED and DISABLED
+//                  Don't show inaccessible devices if TLIO is disabled
+//                  Report TLIO as port 1 only (rather than all ports)
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -231,6 +240,11 @@
 #include "CDP1877.hpp"          // CDP1877 programmable interrupt controller
 #include "CDP1879.hpp"          // CDP1879 real time clock
 #include "PSG.hpp"              // AY-3-8912 programmable sound generator
+#include "TwoPSGs.hpp"          // special hacks for two PSGs in the SBC1802
+#include "PPI.hpp"              // generic programmable I/O definitions
+#include "CDP1851.hpp"          // CDP1851 programmable I/O interface
+#include "Timer.hpp"            // generic counter/timer
+#include "CDP1878.hpp"          // CDP1878 specific counter/timer
 #include "ElfDisk.hpp"          // SBC1802/ELF2K to IDE interface
 #include "UserInterface.hpp"    // emulator user interface parse table definitions
 
@@ -278,6 +292,7 @@ CCmdArgNumber      CUI::m_argUnit("unit", 10, 0, 255);
 CCmdArgNumber      CUI::m_argCapacity("capacity", 10, 1, UINT32_MAX);
 CCmdArgNumber      CUI::m_argDelay("delay (ms)", 10, 1, 1000000UL);
 CCmdArgList        CUI::m_argDelayList("delay list", m_argDelay, true);
+CCmdArgNumber      CUI::m_argFrequency("frequency", 10, 1, UINT32_MAX);
 
 // Modifier definitions ...
 CCmdModifier CUI::m_modFileFormat("FORM*AT", NULL, &m_argFileFormat);
@@ -286,6 +301,7 @@ CCmdModifier CUI::m_modBreakChar("BRE*AK", NULL, &m_argBreakChar);
 CCmdModifier CUI::m_modIllegalIO("IO", NULL, &m_argStopIO);
 CCmdModifier CUI::m_modIllegalOpcode("OP*CODE", NULL, &m_argStopOpcode);
 CCmdModifier CUI::m_modCPUextended("EXT*ENDED", "NOEXT*ENDED");
+CCmdModifier CUI::m_modClockFrequency("CLO*CK", NULL, &m_argFrequency);
 CCmdModifier CUI::m_modBaseAddress("BAS*E", NULL, &m_argBaseAddress);
 CCmdModifier CUI::m_modByteCount("COU*NT", NULL, &m_argByteCount);
 CCmdModifier CUI::m_modROM("ROM", "RAM");
@@ -304,7 +320,7 @@ CCmdModifier CUI::m_modXModem("X*MODEM", NULL);
 CCmdModifier CUI::m_modAppend("APP*END", "OVER*WRITE");
 CCmdModifier CUI::m_modCRLF("CRLF", "NOCRLF");
 CCmdModifier CUI::m_modDelayList("DEL*AY", NULL, &m_argDelayList);
-CCmdModifier CUI::m_modEnable("ENA*BLE", "DISA*BLE");
+CCmdModifier CUI::m_modEnable("ENA*BLED", "DISA*BLED");
 
 // LOAD and SAVE commands ...
 CCmdArgument * const CUI::m_argsLoadSave[] = {&m_argFileName, NULL};
@@ -364,7 +380,8 @@ CCmdVerb CUI::m_cmdInput("IN*PUT", &DoInput, m_argsInput, NULL);
 
 // SET, CLEAR and SHOW CPU ...
 CCmdModifier * const CUI::m_modsSetCPU[] = {
-    &m_modCPUextended, &m_modIllegalIO, &m_modIllegalOpcode, &m_modBreakChar, NULL
+    &m_modCPUextended, &m_modIllegalIO, &m_modIllegalOpcode,
+    &m_modBreakChar, &m_modClockFrequency, NULL
   };
 CCmdVerb CUI::m_cmdSetCPU = {"CPU", &DoSetCPU, NULL, m_modsSetCPU};
 CCmdVerb CUI::m_cmdClearCPU("CPU", &DoClearCPU);
@@ -1380,6 +1397,12 @@ bool CUI::DoSetCPU (CCmdParser &cmd)
     g_pConsole->SetConsoleBreak(m_argBreakChar.GetNumber());
   if (m_modCPUextended.IsPresent())
     g_pCPU->SetExtended(!m_modCPUextended.IsNegated());
+  if (m_modClockFrequency.IsPresent()) {
+    // Note that changing the CPU clock frequency affects the CTC timer A too!!
+    uint32_t lFrequency = m_argFrequency.GetNumber();
+    g_pCPU->SetCrystalFrequency(lFrequency);
+    g_pCTC->SetClockA(lFrequency);
+  }
   return true;
 }
 
@@ -1425,6 +1448,7 @@ bool CUI::DoShowCPU (CCmdParser &cmd)
   for (CPriorityInterrupt::IRQLEVEL i = CCDP1877::PICLEVELS; i > 0; --i) {
     CSimpleInterrupt* pInterrupt = g_pPIC->GetLevel(i);
     CDevice *pDevice = g_pCPU->FindDevice(pInterrupt);
+    if (pDevice == NULL) pDevice = g_pTLIO->FindDevice(pInterrupt);
     if ((pDevice == NULL) && (pInterrupt == g_pRTC->GetInterrupt())) pDevice = g_pRTC;
     CMDOUTF("%2d   %-3s  %-4s  %02X %02X %02X  %-8s",
       i-1, g_pPIC->IsRequestedAtLevel(i) ? "YES" : "no",
@@ -1542,6 +1566,8 @@ CDevice *CUI::FindDevice (const string sDevice)
   if (CCmdArgKeyword::Match(sDevice, g_pPIC->GetName())) return g_pPIC;
   if (CCmdArgKeyword::Match(sDevice, g_pRTC->GetName())) return g_pRTC;
   if (CCmdArgKeyword::Match(sDevice, g_pMCR->GetName())) return g_pMCR;
+  if (CCmdArgKeyword::Match(sDevice, g_pPSG1->GetName())) return g_pPSG1;
+  if (CCmdArgKeyword::Match(sDevice, g_pPSG2->GetName())) return g_pPSG2;
   CMDERRS("No such device as " << sDevice);
   return NULL;
 }
@@ -1579,13 +1605,13 @@ string CUI::ShowDeviceSense (const CDevice *pDevice)
   return sResult;
 }
 
-void CUI::ShowOneDevice (const CDevice *pDevice, bool fHeading)
+void CUI::ShowOneDevice(const CDevice* pDevice, bool fHeading)
 {
   //++
   // Show the common device options (description, ports, type) to a string.
   //--
-  string sLine;
-  
+  string sLine;  bool fTLIO = g_pTLIO->IsTLIOenabled();
+
   sLine = FormatString("%-8s  %-9s  %-30s  ",
     pDevice->GetName(), pDevice->GetType(), pDevice->GetDescription());
 
@@ -1598,15 +1624,21 @@ void CUI::ShowOneDevice (const CDevice *pDevice, bool fHeading)
   else
     sLine += "        ";
 
-  uint8_t nGroup = g_pTLIO->FindGroup(pDevice);
-  if (nGroup != 0)
-    sLine += FormatString("  $%02X  ", nGroup);
-  else
-    sLine += "       ";
+  if (fTLIO && (pDevice == g_pTLIO)) {
+    sLine += "  ALL  ";
+  } else {
+    uint8_t nGroup = g_pTLIO->FindGroup(pDevice);
+    if ((pDevice == g_pPSG1) || (pDevice == g_pPSG2))
+      nGroup = g_pTLIO->FindGroup(g_pTwoPSGs);
+    if (fTLIO && (nGroup != 0))
+      sLine += FormatString("  $%02X  ", nGroup);
+    else
+      sLine += "       ";
+  }
 
-  if (pDevice->GetPortCount() <= 1) {
+  if ((pDevice == g_pTLIO) || (pDevice->GetPortCount() <= 1)) {
     if (pDevice->GetBasePort() <= 7)
-      sLine += FormatString("     %d       ", pDevice->GetBasePort());
+      sLine += FormatString("      %d      ", pDevice->GetBasePort());
     else
       sLine += FormatString(" $%04X       ", pDevice->GetBasePort());
   } else {
@@ -1635,18 +1667,24 @@ bool CUI::ShowAllDevices()
   // some are I/O mapped, some are input only, some are output only, or
   // both.  This is pretty kludgey, but it gets the job done...
   //--
+  bool fTLIO = g_pTLIO->IsTLIOenabled();
   CMDOUTS("");
   ShowOneDevice(g_pMCR, true);
   ShowOneDevice(g_pRTC);
   ShowOneDevice(g_pPIC);
-  ShowOneDevice(g_pTLIO);
   ShowOneDevice(g_pSLU0);
   ShowOneDevice(g_pLEDS);
   ShowOneDevice(g_pSwitches);
   ShowOneDevice(g_pIDE);
   ShowOneDevice(g_pBRG);
-  ShowOneDevice(g_pSLU1);
-  ShowOneDevice(g_pPSG);
+  if (fTLIO) {
+    ShowOneDevice(g_pTLIO);
+    ShowOneDevice(g_pSLU1);
+    ShowOneDevice(g_pPPI);
+    ShowOneDevice(g_pCTC);
+    ShowOneDevice(g_pPSG1);
+    ShowOneDevice(g_pPSG2);
+  }
   CMDOUTS("");
   return true;
 }

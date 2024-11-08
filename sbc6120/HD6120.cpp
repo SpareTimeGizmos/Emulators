@@ -99,6 +99,7 @@
 // 
 // REVISION HISTORY:
 // 31-JUL-22  RLA  New file.
+//  6-NOV-24  RLA  Add set default CPU clock to constructor.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -145,6 +146,7 @@ C6120::C6120(CMemory *pMainMemory, CMemory *pPanelMemory, CEventQueue *pEvent,
   m_pMainMemory = pMainMemory;  m_pPanelDirect = m_pPanelIndirect = pPanelMemory;
   m_pMainInterrupt = pMainInterrupt;  m_pPanelInterrupt = pPanelInterrupt;
   m_StartupMode = STARTUP_PANEL;  m_fHLThalts = false;
+  SetCrystalFrequency(DEFAULT_CLOCK);
   ClearCPU();
 }
 

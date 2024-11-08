@@ -28,7 +28,9 @@
 
 // Program name and version ...
 #define PROGRAM      "sbc1802"  // used in prompts and error messages 
-#define SBCVER               1  // version number of this release
+#define SBCVER               2  // version number of this release
+#define CPUCLK    2500000UL     // CPU crystal frequency
+#define BAUDCLK   4915200UL     // baud rate crystal frequency
 
 // SBC1802 memory configuration ...
 #define RAMSIZE         65536UL   // number of bytes in RAM
@@ -70,7 +72,8 @@
 #define SLU1_PORT       2         // CDP1854 base port
 #define MDU_PORT        4         // CDP1855 multiply/divide unit group
 #define PPI_PORT        2         // CDP1851 PPI base port
-#define PSG_PORT        2         // AY-3-8192 PSG base port
+#define PSG1_PORT       2         // AY-3-8192 PSG#1 base port
+#define PSG2_PORT       6         // AY-3-8192 PSG#2 base port
 
 // EXP1802 expansion board EF bit assignments ...
 #define TIMER_IRQ_EF  CCOSMAC::EF3// CDP1878 timer counter IRQ
@@ -112,4 +115,8 @@ extern class CCDP1877       *g_pPIC;          // CDP1877 programmable interrupt 
 // Extension board devices ...
 extern class CCDP1854       *g_pSLU1;         // secondary UART (for TU58)
 extern class CTU58          *g_pTU58;         // TU58 drive emulator
-extern class CPSG           *g_pPSG;          // AY-3-8912 programmable sound generator
+extern class CPSG           *g_pPSG1;         // AY-3-8912 programmable sound generator #1
+extern class CPSG           *g_pPSG2;         // AY-3-8912 programmable sound generator #2
+extern class CTwoPSGs       *g_pTwoPSGs;      // SBC1802 implementation of two PSGs
+extern class CCDP1851       *g_pPPI;          // CDP1851 programmable I/O interface
+extern class CCDP1878       *g_pCTC;          // CDP1878 counter/timer

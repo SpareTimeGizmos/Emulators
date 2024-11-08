@@ -51,7 +51,7 @@ class C6120 : public CCPU
   // Magic numbers and constants ...
 public:
   enum {
-    CLOCK_FREQUENCY = 8000000UL,  // standard SBC6120 crystal is 8MHz
+    DEFAULT_CLOCK = 8000000UL,// standard SBC6120 crystal is 8MHz
   };
 
   // Internal CPU registers ...
@@ -136,8 +136,6 @@ public:
   // Get a constant string for the CPU name, type or options ...
   virtual const char *GetDescription() const override {return "12 Bit Microprocessor";}
   virtual const char *GetName() const override {return "HD6120";}
-  // Get the CPU's simulated crystal frequency in MHz ...
-  virtual uint32_t GetCrystalFrequency() const override {return CLOCK_FREQUENCY;}
   // Get the address of the next instruction to be executed ...
   virtual address_t GetPC() const override {return m_IF|m_PC;}
   virtual void SetPC (address_t a) override {m_IF = m_IB = (a & 070000);  m_PC = (a & 07777);}
@@ -189,7 +187,7 @@ private:
   // TRUE if we're in control panel mode right now ...
   inline bool IsPanel() const {return ISFF(FF_CTRL);}
   // Increment the simulated CPU run time ...
-  void AddCycles (uint32_t lCycles) {AddTime(lCycles * HZTONS(CLOCK_FREQUENCY));}
+  void AddCycles (uint32_t lCycles) {AddTime(lCycles * HZTONS(m_lClockFrequency));}
 
   // HD6120 memory access primitives ...
 private:

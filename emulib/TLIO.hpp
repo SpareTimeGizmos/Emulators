@@ -21,6 +21,7 @@
 //
 // REVISION HISTORY:
 // 17-DEC-23  RLA   New file.
+//  6-NOV-24  RLA   Add Find(pInterrupt) ...
 //--
 #pragma once
 #include <stdint.h>
@@ -98,6 +99,8 @@ public:
   CDevice *FindDevice (const string sName) const;
   CDevice *FindInputDevice (uint8_t nGroup, address_t nPort) const;
   CDevice *FindOutputDevice (uint8_t nGroup, address_t nPort) const;
+  // Find any input or output device with a matching IRQ ...
+  CDevice *FindDevice (const class CSimpleInterrupt *pInterrupt) const;
   // Find the I/O group this device belongs to ...
   uint8_t FindGroup (const CDevice *pDevice) const;
   // Find sense or flag devices from group and address ...

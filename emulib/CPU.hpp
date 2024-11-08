@@ -38,6 +38,7 @@
 //                    control a constructor parameter and make it optional.
 //  5-JUL-22  RLA   Change to use CDeviceMap class ...
 // 18-JUL-22  RLA   Change NSTOMS to return uint64_t, not uint32_t!
+//  6-NOV-24  RLA   Add m_lClockFrequency ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -108,8 +109,10 @@ public:
   // Get or set the address of the next instruction to be executed ...
   virtual address_t GetPC() const {return 0;}
   virtual void SetPC (address_t a) {};
-  // Get the CPU's simulated crystal frequency in MHz ...
-  virtual uint32_t GetCrystalFrequency() const {return 0;}
+  // Get or set the CPU's simulated crystal frequency in MHz ...
+  virtual uint32_t GetCrystalFrequency() const {return m_lClockFrequency;}
+  virtual void SetCrystalFrequency (uint32_t lFrequency)
+    {assert(lFrequency != 0);  m_lClockFrequency = lFrequency;}
   // Get a constant string for the CPU name, type or options ...
   virtual const char *GetDescription() const {return "unknown";}
   virtual const char *GetName() const {return "none";}
@@ -188,6 +191,7 @@ protected:
 
   // Private member data...
 protected:
+  uint32_t  m_lClockFrequency;      // clock or crystal frequency 
   bool      m_fStopOnIllegalIO;     // break simulation on unimplemented I/Os
   bool      m_fStopOnIllegalOpcode; //   "      "   "    "   "     "     opcodes
   STOP_CODE       m_nStopCode;      // reason for stopping the emulator

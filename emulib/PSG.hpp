@@ -22,6 +22,7 @@
 //
 // REVISION HISTORY:
 // 72-FEB-24  RLA   New file.
+// 30-OCT-24  RLA   PAOUT and PBOUT are backwards!
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -70,8 +71,8 @@ public:
     R17        = PSGSEL+017,  //  "   "   B   "
     MAXREG     = 16,          // total number of registers
     // Bits in the mixer control register R7 ...
-    R7_PAOUT        = 0x80,   // port A output mode
-    R7_PBOUT        = 0x40,   //  "   B  "  "   "
+    R7_PBOUT        = 0x80,   // port B output mode
+    R7_PAOUT        = 0x40,   //  "   A  "  "   "
     R7_CNOISE       = 0x20,   // channel C noise generator enable
     R7_BNOISE       = 0x10,   //  "   "  B   "    "    "     "
     R7_ANOISE       = 0x08,   //  "   "  A   "    "    "     "

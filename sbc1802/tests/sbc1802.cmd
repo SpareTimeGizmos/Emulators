@@ -1,13 +1,8 @@
-; Script to boot ElfOS on the SCB1802 emulator.
-;  Note that you can boot from either IDE or TU58!
-SET LOGGING/CONSOLE/LEVEL=WARNING
-SET CPU/EXTENDED
-ATTACH DISK ElfOSv5.dsk/UNIT=0
-ATTACH DISK empty.dsk/UNIT=1/CAPACITY=16536
-ATTACH TAPE ElfOSv5.tu58/UNIT=0
-SET DEVICE SLU1/TXSPEED=400
-CLEAR MEMORY
-LOAD eprom.hex/ROM
-;LOAD/RAM/BASE=FE00 nvr.bin
-RUN
-SAVE/RAM/BASE=FE00/COUNT=224/FORMAT=BINARY/OVERWRITE nvr.bin
+set logging/console/level=warning
+set cpu/extended
+attach disk sbc1802.dsk/unit=0/capacity=128128
+clear memory
+load eprom.hex/rom
+load/ram/base=fe00 data.bin
+;run
+;save/ram/base=fe00/count=224/format=binary/overwrite data.bin

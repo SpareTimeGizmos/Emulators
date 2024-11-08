@@ -145,7 +145,7 @@ void CPSG::ShowDevice (ostringstream &ofs) const
   //   This routine will dump the state of the internal PSG registers.
   // This is used by the user interface SHOW DEVICE command ...
   //--
-  ofs << FormatString("LastAddress = 03o", m_bAddress) << std::endl;
+  ofs << FormatString("LastAddress = %03o", m_bAddress) << std::endl;
   for (uint8_t i = 0; i < MAXREG; ++i) {
     ofs << FormatString("R%02o=0x%02X ", i, m_abRegisters[i]);
     if ((i%8) == 7) ofs << std::endl;

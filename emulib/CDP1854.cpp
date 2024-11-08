@@ -30,6 +30,7 @@
 //                    update our interrupt request status too!
 // 28-FEB-24  RLA   On the 1854, BREAK inhibits the transmitter!
 // 10-MAR-24  RLA   Add received break support
+// 25-OCT-24  RLA   Always set the ES bit in the status (used for CTS).
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -67,9 +68,14 @@ void CCDP1854::ClearDevice()
   // It initializes all the UART registers to their correct values, and it
   // schedules the first event for receiver polling.  The latter is critical,
   // because if we don't schedule polling now then we never will!
+  // 
+  //   Note that the sBC1802 uses the ES status bit for CTS, which is used
+  // for hardware flow control.  We don't actually implement any flow control,
+  // but we always need to set the ES bit so the firmware will think that
+  // it's OK to output.
   //--
   m_bRBR = m_bTHR = m_bCTL = 0;
-  m_bSTS = STS_THRE|STS_TSRE;
+  m_bSTS = STS_THRE|STS_TSRE|STS_ES;
   m_fIRQ = m_fTHRE_IRQ = false;
   RequestInterrupt(false);
   CUART::ClearDevice();

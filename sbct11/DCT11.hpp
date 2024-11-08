@@ -46,7 +46,7 @@ class CDCT11 : public CCPU {
   // Magic numbers and constants ...
 public:
   enum {
-    CLOCK_FREQUENCY = 4915200UL,  // standard SBCT11 crystal is 4.9152MHz
+    DEFAULT_CLOCK   = 4915200UL,  // standard SBCT11 crystal is 4.9152MHz
     PROCESSOR_TYPE  = 4,          // value returned by MFPT for the T11
     MAXIRQ          = 16,         // number of external interrupts supported
   };
@@ -143,8 +143,6 @@ public:
   // Get a constant string for the CPU name, type or options ...
   const char *GetDescription() const override {return "DEC T11 Microprocessor";}
   const char *GetName() const override {return "DCT11";}
-  // Get the CPU's simulated crystal frequency in MHz ...
-  uint32_t GetCrystalFrequency() const override {return CLOCK_FREQUENCY;}
   // Get the address of the next instruction to be executed ...
   inline address_t GetPC() const override {return m_wR[REG_PC];}
   inline void SetPC (address_t a) override {m_wR[REG_PC] = a;}

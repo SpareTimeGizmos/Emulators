@@ -31,6 +31,7 @@
 # dd-mmm-yy	who     description
 # 27-AUG-22	RLA	New file.
 #  4-MAR-24	RLA	Remove GENERIC and move everything to EMULIB.
+#  7-NOV-24	RLA	Convert i8255 to use CPPI implementation.
 #--
 
 # Compiler preprocessor DEFINEs for the entire project ...
@@ -50,7 +51,7 @@ CPPSRCS   = sbct11.cpp DCT11.cpp MemoryMap.cpp  PIC11.cpp \
 	    $(EMULIB)/Memory.cpp $(EMULIB)/CPU.cpp $(EMULIB)/IDE.cpp \
 	    $(EMULIB)/DeviceMap.cpp $(EMULIB)/Device.cpp \
 	    $(EMULIB)/UART.cpp $(EMULIB)/DC319.cpp \
-            $(EMULIB)/i8255-original.cpp $(EMULIB)/DS12887.cpp \
+            $(EMULIB)/i8255.cpp $(EMULIB)/PPI.cpp $(EMULIB)/DS12887.cpp \
             $(EMULIB)/RTC.cpp $(EMULIB)/DECfile11.cpp $(EMULIB)/TU58.cpp 
 CSRCS	  = $(EMULIB)/SafeCRT.c
 INCLUDES  = $(EMULIB)/

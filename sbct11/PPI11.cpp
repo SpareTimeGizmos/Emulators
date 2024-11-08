@@ -59,12 +59,12 @@
 #include "EventQueue.hpp"       // CEventQueue definitions
 #include "CPU.hpp"              // CPU definitions
 #include "Device.hpp"           // generic device definitions
-#include "i8255-original.hpp"   // generic PPI base class
+#include "i8255.hpp"            // generic PPI base class
 #include "PPI11.hpp"            // declarations for this module
 
 
 CPPI11::CPPI11 (const char *pszName, address_t nBase, CEventQueue *pEvents)
-  : C8255 (pszName, nBase, 2*C8255::REG_COUNT, pEvents)
+  : C8255 (pszName, nBase, pEvents, 2*C8255::REG_COUNT)
 {
   //++
   //--

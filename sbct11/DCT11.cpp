@@ -219,6 +219,7 @@ CDCT11::CDCT11 (uint16_t wMode, CMemoryMap *pMemory, CEventQueue *pEvent, CPIC11
 {
   //++
   //--
+  SetCrystalFrequency(DEFAULT_CLOCK);
   SetMode(wMode);
   MasterClear();
 }
@@ -305,7 +306,7 @@ void CDCT11::AddCycles (uint32_t lCycles)
   //--
   assert(m_pEvents != NULL);
   uint64_t llTime = ((uint64_t) lCycles)
-                  * HZTONS(CLOCK_FREQUENCY)
+                  * HZTONS(m_lClockFrequency)
                   * (IsLMC() ? 4ULL : 3ULL);
   if (llTime > 0) m_pEvents->AddTime(llTime);
 }

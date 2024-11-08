@@ -56,6 +56,7 @@
 //
 // REVISION HISTORY:
 // 17-DEC-23  RLA   New file.
+//  6-NOV-24  RLA   Add Find(pInterrupt) ...
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -68,9 +69,6 @@
 #include <map>                  // C++ std::map template
 #include "EMULIB.hpp"           // emulator library definitions
 #include "LogFile.hpp"          // emulator library message logging facility
-//#include "SBC1802.hpp"          // global declarations for this project
-//#include "Interrupt.hpp"        // interrupt simulation logic
-//#include "EventQueue.hpp"       // I/O device event queue simulation
 #include "Memory.hpp"           // basic memory emulation declarations ...
 #include "Device.hpp"           // basic I/O device emulation declarations ...
 #include "DeviceMap.hpp"        // CDeviceMap declaration
@@ -261,6 +259,22 @@ CDevice *CTLIO::FindDevice (const string sName) const
     if ((pDevice = pGroup->m_Outputs.Find(sName)) != NULL) return pDevice;
     if ((pDevice = pGroup->m_Senses.Find(sName)) != NULL) return pDevice;
     if ((pDevice = pGroup->m_Flags.Find(sName)) != NULL) return pDevice;
+  }
+  return NULL;
+}
+
+CDevice *CTLIO::FindDevice (const class CSimpleInterrupt *pInterrupt) const
+{
+  //++
+  //   Search thru all the devices we know about for one with the specified
+  // interrupt and, if we find one, return a pointer to its CDevice object.
+  // Note that the TLIO device doesn't use interrupts, so in this case we
+  // don't have to worry about finding ourself!
+  //--
+  for (CONST_MAP_ITERATOR it = MapBegin(); it != MapEnd(); ++it) {
+    CDevice *pDevice;  GROUP *pGroup = it->second;
+    if ((pDevice = pGroup->m_Inputs.Find(pInterrupt)) != NULL) return pDevice;
+    if ((pDevice = pGroup->m_Outputs.Find(pInterrupt)) != NULL) return pDevice;
   }
   return NULL;
 }

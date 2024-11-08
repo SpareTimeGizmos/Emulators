@@ -85,6 +85,7 @@ CCOSMAC::CCOSMAC (CMemory *pMemory, CEventQueue *pEvents, CInterrupt *pInterrupt
   //--
   m_fExtended = false;
   for (uint16_t i = 0;  i < MAXSENSE;  ++i)  SetDefaultEF(i, 0);
+  SetCrystalFrequency(DEFAULT_CLOCK);
   CCOSMAC::ClearCPU();
 }
 
@@ -377,11 +378,11 @@ void CCOSMAC::AddCycles (uint32_t lCycles)
   //--
   if (!m_fExtended || (m_CTmode == CT_STOPPED)) {
     // The counter/timer is not is use, so it's safe to skip updating it!
-    AddTime(lCycles * CLOCKS_PER_CYCLE * HZTONS(CLOCK_FREQUENCY));
+    AddTime(lCycles * CLOCKS_PER_CYCLE * HZTONS(m_lClockFrequency));
   } else {
     // We'll have to do things the hard way...
     while (lCycles-- > 0) {
-      AddTime(CLOCKS_PER_CYCLE * HZTONS(CLOCK_FREQUENCY));
+      AddTime(CLOCKS_PER_CYCLE * HZTONS(m_lClockFrequency));
       DoEvents();  UpdateCounter();
     }
   }

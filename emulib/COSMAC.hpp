@@ -48,7 +48,7 @@ class CCOSMAC : public CCPU {
   // CPU characteristics...
 public:
   enum {
-    CLOCK_FREQUENCY   = 2500000UL,// standard SBC1802 crystal is 2.5MHz
+    DEFAULT_CLOCK     = 2500000UL,// standard SBC1802 crystal is 2.5MHz
     CLOCKS_PER_CYCLE  = 8,        // COSMAC 8 clocks per major cycle
     MAXREGISTER       = 16,       // number of register file registers
     MAXDEVICE         = 7,        // number of I/O device addresses
@@ -101,8 +101,6 @@ public:
   // Get a constant string for the CPU name, type or options ...
   const char *GetDescription() const override {return "8 bit microprocessor";}
   const char *GetName() const  override {return "COSMAC";}
-  // Get the CPU's simulated crystal frequency in MHz ...
-  uint32_t GetCrystalFrequency() const override {return CLOCK_FREQUENCY;}
   // Get the address of the next instruction to be executed ...
   address_t GetPC() const override;
   // Get or set the extended (1804/5/6) instruction set support ...

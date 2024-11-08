@@ -55,7 +55,7 @@
 #include "RTC.hpp"              // generic NVR declarations
 #include "DS12887.hpp"          // Dallas DS12887A NVR/RTC declarations
 #include "RTC11.hpp"            // real time clock
-#include "i8255-original.hpp"   // Intel 8255 programmable peripheral interface
+#include "i8255.hpp"            // Intel 8255 programmable peripheral interface
 #include "PPI11.hpp"            // Centronics parallel port and POST display
 #include "IDE.hpp"              // generic IDE disk drive emulation
 #include "IDE11.hpp"            // IDE disk attachment

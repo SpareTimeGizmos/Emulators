@@ -32,7 +32,7 @@
 #include "CPU.hpp"              // CPU definitions
 #include "Interrupt.hpp"        // CInterrupt definitions
 #include "Device.hpp"           // generic device definitions
-#include "i8255-original.hpp"   // Intel 8255 PPI base class
+#include "i8255.hpp"            // Intel 8255 PPI base class
 using std::string;              // ...
 
 
