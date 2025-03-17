@@ -115,8 +115,8 @@
 //      /SHO*RT=nnnn            - set IDE short delay, in microseconds
 //      /LO*NG=nnnn             -  "   "  long    "    "    "    "
 //      /SW*ITCHES=xx           - set toggle switches to xx
-//      /ENABLE                 - enable TLIO
-//      /DISABLE                - disable  "
+//      /ENABLE                 - enable TLIO, DISK or TAPE
+//      /DISABLE                - disable  "     "       "
 //
 //   SH*OW CPU                  - show CPU details
 //   CL*EAR CPU                 - reset the CPU only
@@ -203,6 +203,8 @@
 //  7-NOV-24  RLA   Change /ENABLE and /DISABLE to ENABLED and DISABLED
 //                  Don't show inaccessible devices if TLIO is disabled
 //                  Report TLIO as port 1 only (rather than all ports)
+//  5-MAR-24  RLA   Add SET DISK and SET TAPE /ENABLE or /DISABLE
+//                  Change "SHOW DEVICE TU58" to "SHOW DEVICE TAPE"
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -1705,7 +1707,7 @@ bool CUI::DoShowDevice (CCmdParser &cmd)
   //   The TU58 doesn't have a CDevice interface, so we have to make
   // a special case for that one...
   string sDevice = m_argOptDeviceName.GetValue();
-  if (CCmdArgKeyword::Match(sDevice, "TU58")) return ShowTape();
+  if (CCmdArgKeyword::Match(sDevice, "TAPE")) return ShowTape();
 
   // Otherwise try to match the device name ...
   CDevice *pDevice = FindDevice(sDevice);
@@ -1747,9 +1749,19 @@ bool CUI::DoSetDevice (CCmdParser &cmd)
   // very smart in that it silently ignores any options which don't apply
   // to the selected device.
   //--
-  CDevice *pDevice = FindDevice(m_argDeviceName.GetValue());
+  string sDevice = m_argDeviceName.GetValue();
+
+  // The TU58 is a special case because it's not a CDevice derived class!
+  if (CCmdArgKeyword::Match(sDevice, "TAPE")) {
+    if (m_modEnable.IsPresent()) g_pTU58->Enable(!m_modEnable.IsNegated());
+    return true;
+  }
+
+  // Search for the corresponding CDevice object ...
+  CDevice *pDevice = FindDevice(sDevice);
   if (pDevice == NULL) return false;
 
+  // Apply the device specific options ...
   if ((pDevice == g_pTLIO) && m_modEnable.IsPresent()) {
     g_pTLIO->EnableTLIO(!m_modEnable.IsNegated());
   } else if ((pDevice == g_pSwitches) && m_modSwitches.IsPresent()) {
@@ -1763,6 +1775,7 @@ bool CUI::DoSetDevice (CCmdParser &cmd)
   } else if (pDevice == g_pIDE) {
     if (m_modShortDelay.IsPresent()) g_pIDE->SetShortDelay(USTONS(m_argShortDelay.GetNumber()));
     if (m_modLongDelay.IsPresent()) g_pIDE->SetLongDelay(USTONS(m_argLongDelay.GetNumber()));
+    if (m_modEnable.IsPresent()) g_pIDE->Enable(!m_modEnable.IsNegated());
   }
 
   return true;

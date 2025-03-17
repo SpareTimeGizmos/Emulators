@@ -58,6 +58,7 @@ private:
 
   // CElfDisk device methods ...
 public:
+  void Enable (bool fEnable) {m_fEnabled = fEnable;}
   virtual void ClearDevice() override {m_bSelect = 0;  CIDE::ClearDevice();}
   virtual word_t DevRead (address_t nPort) override;
   virtual void DevWrite (address_t nPort, word_t bData) override;
@@ -65,5 +66,6 @@ public:
 
   // Private member data...
 protected:
+  bool       m_fEnabled;        // FALSE if the IDE interface is disconnected
   uint8_t    m_bSelect;         // last value written to the select register
 };

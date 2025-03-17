@@ -41,6 +41,7 @@
 //
 // REVISION HISTORY:
 // 20-JAN-20  RLA   New file.
+//  5-MAR-25  RLA   Add Enable() to disconnect the IDE drives.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -65,11 +66,15 @@ word_t CElfDisk::DevRead (address_t nPort)
   //   Reading the IDE data register is easy (well, it is for us - the CIDE
   // class does all the real work) and reading the select register is not
   // implemented.  In the SBC1802 the bus just floats if you try the latter.
+  // 
+  //   Note that if the IDE interface is disabled, then it behaves as if no
+  // drives were connected.  Reads always return zeros and writes are ignored.
   //--
   assert((nPort >= GetBasePort())  &&  ((nPort-GetBasePort()) < IDEPORTS));
+  if (!m_fEnabled) return 0x00;
   switch (nPort - GetBasePort()) {
     case DATA_PORT:  return CIDE::DevRead(m_bSelect & 0x0F);
-    default:         return 0xFF;
+    default:         return 0x00;
   }
 }
 
@@ -79,6 +84,7 @@ void CElfDisk::DevWrite (address_t nPort, word_t bData)
   //  Writing to the IDE is no harder ...
   //--
   assert((nPort >= GetBasePort())  &&  ((nPort-GetBasePort()) < IDEPORTS));
+  if (!m_fEnabled) return;
   switch (nPort - GetBasePort()) {
     case SELECT_PORT:  m_bSelect = bData;                         break;
     case DATA_PORT:    CIDE::DevWrite((m_bSelect & 0x0F), bData); break;
@@ -91,6 +97,9 @@ void CElfDisk::ShowDevice (ostringstream &ofs) const
   //   This routine will dump the state of the internal IDE registers.
   // This is used by the UI EXAMINE command ...
   //--
-  ofs << FormatString("Last register selected 0x%02X\n", m_bSelect);
-  CIDE::ShowDevice(ofs);
+  if (m_fEnabled) {
+    ofs << FormatString("Last register selected 0x%02X\n", m_bSelect);
+    CIDE::ShowDevice(ofs);
+  } else
+    ofs << FormatString("IDE DISABLED") << std::endl;
 }

@@ -143,6 +143,8 @@ public:
 
   // Other public CTU58 methods ...
 public:
+  // Enable or disable the TU58 drive ...
+  void Enable (bool fEnable) {m_fEnabled = fEnable;}
   // Return the number of units supported ...
   uint8_t GetUnits() const {return m_nUnits;}
   // Attach the emulated drive to an image file ...
@@ -189,6 +191,7 @@ protected:
 
   // Private member data...
 protected:
+  bool          m_fEnabled;       // FALSE if no TU58 attached
   uint8_t       m_nUnits;         // number of units on this drive
   RSP_STATE     m_nState;         // current state of the RSP protocol
   RSP_DATA      m_RSPbuffer;      // packet being sent or received

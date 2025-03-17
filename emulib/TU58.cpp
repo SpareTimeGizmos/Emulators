@@ -100,6 +100,7 @@
 // 18-JUL-22  RLA   Change ReadKey to RawRead and allow for null bytes.
 //                  Change Write() to RawWrite().
 // 30-AUG-22  RLA   Convert memcpy_s() to memcpy() for Linux compatibility.
+//  5-MAR-25  RLA   Add Enable() to "disconnect" the TU58 drive.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -122,7 +123,7 @@ CTU58::CTU58 (uint8_t nUnits) : m_Images(nUnits)
   //++
   //--
   assert(nUnits > 0);
-  m_nUnits = nUnits;
+  m_fEnabled = true;  m_nUnits = nUnits;
   for (uint16_t i = 0; i < nUnits; ++i) {
     m_Images[i] = DBGNEW CDiskImageFile(RSP_BLOCKSIZE);
   }
@@ -159,12 +160,18 @@ int32_t CTU58::RawRead (uint8_t *pabBuffer, size_t cbBuffer, uint32_t lTimeout)
   // 
   //   Note that the timeout is ignored.  It doesn't really mean anything here,
   // since we don't emulate the timing!
+  // 
+  //   And lastly, note that if the TU58 is NOT enabled then the serial port
+  // behaves as if no TU58 drive were attached at all.  In other words, we
+  // just ignore everything here!
   //--
   int32_t cbRead = 0;
-  while ((size_t) cbRead < cbBuffer) {
-    uint8_t bData;
-    if (!TxToHost(bData)) return cbRead;
-    *pabBuffer++ = bData;  ++cbRead;
+  if (m_fEnabled) {
+    while ((size_t)cbRead < cbBuffer) {
+      uint8_t bData;
+      if (!TxToHost(bData)) return cbRead;
+      *pabBuffer++ = bData;  ++cbRead;
+    }
   }
   return cbRead;
 }
@@ -177,9 +184,11 @@ void CTU58::RawWrite (const char *pabBuffer, size_t cbBuffer)
   // push them thru our state machine.  There may be a protocol error, but
   // we're always ready to receive whatever he wants to send.
   //--
-  while (cbBuffer > 0) {
-    RxFromHost(*pabBuffer++);
-    --cbBuffer;
+  if (m_fEnabled) {
+    while (cbBuffer > 0) {
+      RxFromHost(*pabBuffer++);
+      --cbBuffer;
+    }
   }
 }
 
@@ -198,12 +207,15 @@ void CTU58::SendSerialBreak (bool fBreak)
   // the BREAK state, then we should just ignore it.  This isn't supposed to
   // happen, but just in case...
   //--
-  if (fBreak) {
-    LOGS(DEBUG, "TU58 BREAK asserted - old state was " << StateToString(m_nState));
-    m_nState = STA_BREAK;
-  } else if (m_nState == STA_BREAK) {
-    LOGS(DEBUG, "TU58 BREAK deasserted");
-    m_nState = STA_INIT1;
+  if (m_fEnabled) {
+    if (fBreak) {
+      LOGS(DEBUG, "TU58 BREAK asserted - old state was " << StateToString(m_nState));
+      m_nState = STA_BREAK;
+    }
+    else if (m_nState == STA_BREAK) {
+      LOGS(DEBUG, "TU58 BREAK deasserted");
+      m_nState = STA_INIT1;
+    }
   }
 }
 
@@ -329,7 +341,7 @@ int32_t CTU58::RxPacketData (uint8_t bData)
   //++
   //   And this routine is called for each byte in a command or data packet
   // after the first (flag) byte.  It will store the bytes received in the
-  // m_RSPbuffer and, when we get to the end, it will receive ad verify the
+  // m_RSPbuffer and, when we get to the end, it will receive and verify the
   // checksum.  It returns 0 if the packet isn't finished yet (i.e. this is
   // just another data byte in the middle), +1 if this is the end of the packet
   // AND the checksum is good, or -1 if this is the end and the checksum is
@@ -819,6 +831,11 @@ void CTU58::ShowDevice (ostringstream& ofs) const
   //   Dump the current TU58 status to the output stream.  This is used by the
   // UI "SHOW TAPE" command for debugging ...
   //--
+
+  if (!m_fEnabled) {
+    ofs << FormatString("TU58 DISABLED") << std::endl;
+    return;
+  }
 
   // Show the attached files, if any ...
   for (uint8_t i = 0;  i < GetUnits();  ++i) {

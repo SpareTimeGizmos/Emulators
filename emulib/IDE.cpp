@@ -112,6 +112,7 @@
 //                  Make IDENTIFY return the actual size of the image file
 //                  C/H/S addressing is no longer allowed and will cause an error
 // 16-DEC-23  RLA   Set the model name (for IDENTIFY DEVICE) to the file name
+// 19-FEB-25  RLA   Invalid commands (e.g. $00) never clear the BUSY bit!
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -643,7 +644,9 @@ void CIDE::DoCommand (uint8_t bCommand)
     case CMD_SPIN_UP:
     case CMD_SPIN_DOWN:     DoNothing();                      break;
     default:
-      LOGF(DEBUG, "unimplemented IDE command 0x%02X", bCommand);  break;
+      DoNothing();
+      LOGF(DEBUG, "unimplemented IDE command 0x%02X", bCommand);
+      break;
   }
 
 }

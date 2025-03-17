@@ -103,7 +103,7 @@ void CLEDS::DevWrite (address_t nPort, word_t bData)
   assert(nPort == GetBasePort());
   m_bPOST = bData;
   LOGF(DEBUG, "POST=\"%s\" (0x%02X)", DecodePOST(bData).c_str(), bData);
-  if ((bData == POST2) || (bData == 0x02)) LOGF(WARNING, "AUTOBAUD NOW");
+  if ((bData == POST3) || (bData == 0x03)) LOGF(WARNING, "AUTOBAUD NOW");
 }
 
 void CLEDS::ShowDevice (ostringstream &ofs) const
