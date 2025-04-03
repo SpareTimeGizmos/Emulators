@@ -9,6 +9,9 @@
 //
 // REVISION HISTORY:
 // 28-JUN-23  RLA   New file.
+// 25-MAR-25  RLA   Add EnablePPI() ...
+//                  Setting the STROBE/READY outputs in bit programmable mode
+//                  is a separate command byte from the mode set!
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -61,6 +64,10 @@ private:
 public:
   // Return the specific PPI subtype ...
   virtual PPI_TYPE GetType() const = 0;
+  //   Enable or disable the PPI. If the PPI is disabled, then it's as if
+  // the PPI chip doesn't exist in the target system.
+  void EnablePPI (bool fEnable) {m_fEnablePPI = fEnable;}
+  bool IsPPIenabled() const {return m_fEnablePPI;}
   // Get or set the modes of ports A, B or C ...
   virtual PORT_MODE GetModeA() const {return m_ModeA;}
   virtual PORT_MODE GetModeB() const {return m_ModeB;}
@@ -151,6 +158,7 @@ protected:
 
   // Private member data...
 protected:
+  bool    m_fEnablePPI;             // TRUE if the PPI chip exists
   //   Ports A and B both potentially have latches for both input and output.
   // Port A is fully bidirectional and can be strobed either way.  Port B is
   // unidirectional, but it can still do strobed transfers either direction.

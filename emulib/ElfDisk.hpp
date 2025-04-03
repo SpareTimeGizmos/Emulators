@@ -49,7 +49,7 @@ public:
 public:
   CElfDisk (uint8_t nPort, CEventQueue *pEvents)
     : CIDE("DISK", "IDE", "IDE Disk Interface", nPort, IDEPORTS, pEvents)
-    {m_bSelect=0;}
+    {m_bSelect=0; m_fEnabled=true;}
   virtual ~CElfDisk() {};
 private:
   // Disallow copy and assignments!

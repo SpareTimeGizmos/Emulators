@@ -128,6 +128,8 @@
 //  7-JUL-22  RLA   New file.
 // 11-JUL-22  RLA   Don't forget to update the IRQA/B bits in UpdateInterrupts()!
 //  2-NOV-24  RLA   Reset the InputX ports to 0xFF in ClearDevice() ...
+// 25-MAR-25  RLA   Add EnablePPI()
+//                  Add BIT_PROGRAMMABLE to the READPORT macro!
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -152,6 +154,7 @@ CPPI::CPPI (const char *pszName, const char *pszType, address_t nPort, address_t
   //++
   // The constructor just initializes the PPI to the defaults..
   //--
+  m_fEnablePPI = true;
   ClearDevice();
 }
 
@@ -183,13 +186,17 @@ void CPPI::UpdateInterrupts()
   // on the current IEN and OBE/IBF status.  Note that interrupts are only
   // possible for strobed or bidrectional ports!
   //--
-  m_fIRQA = m_fIRQB = false;
-  if (((m_ModeA == STROBED_OUTPUT) || (m_ModeA == BIDIRECTIONAL)) && m_fOBEA) m_fIRQA = true;
-  if (((m_ModeA == STROBED_INPUT)  || (m_ModeA == BIDIRECTIONAL)) && m_fIBFA) m_fIRQA = true;
-  if (((m_ModeB == STROBED_OUTPUT) || (m_ModeB == BIDIRECTIONAL)) && m_fOBEB) m_fIRQB = true;
-  if (((m_ModeB == STROBED_INPUT)  || (m_ModeB == BIDIRECTIONAL)) && m_fIBFB) m_fIRQB = true;
-  RequestInterruptA(m_fIENA && m_fIRQA);
-  RequestInterruptB(m_fIENB && m_fIRQB);
+  if (m_fEnablePPI) {
+    m_fIRQA = m_fIRQB = false;
+    if (((m_ModeA == STROBED_OUTPUT) || (m_ModeA == BIDIRECTIONAL)) && m_fOBEA) m_fIRQA = true;
+    if (((m_ModeA == STROBED_INPUT) || (m_ModeA == BIDIRECTIONAL)) && m_fIBFA) m_fIRQA = true;
+    if (((m_ModeB == STROBED_OUTPUT) || (m_ModeB == BIDIRECTIONAL)) && m_fOBEB) m_fIRQB = true;
+    if (((m_ModeB == STROBED_INPUT) || (m_ModeB == BIDIRECTIONAL)) && m_fIBFB) m_fIRQB = true;
+    RequestInterruptA(m_fIENA && m_fIRQA);
+    RequestInterruptB(m_fIENB && m_fIRQB);
+  } else {
+    RequestInterruptA(false);  RequestInterruptB(false);
+  }
  }
 
 /*static*/ const char *CPPI::ModeToString(PORT_MODE nMode)
@@ -265,6 +272,7 @@ uint8_t CPPI::Read##port()                                          \
   uint8_t bData;                                                    \
   switch (m_Mode##port) {                                           \
     case SIMPLE_INPUT:                                              \
+    case BIT_PROGRAMMABLE:                                          \
       m_bInput##port = MaskInput(Input##port(), m_bDDR##port);      \
       return MaskIO(m_bInput##port, m_bOutput##port, m_bDDR##port); \
     case STROBED_INPUT:                                             \

@@ -21,6 +21,7 @@
 //
 // REVISION HISTORY:
 // 18-JUN-22  RLA   New file.
+// 25-MAR-25  RLA   Add EnableRTC() ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -82,6 +83,10 @@ private:
 
   // Public properties ...
 public:
+  //   Enable or disable the RTC. If the RTC chip is disabled, then it's as if
+  // the RTC chip doesn't exist in the target system.
+  void EnableRTC (bool fEnable) {m_fEnableRTC = fEnable;}
+  bool IsRTCenabled() const {return m_fEnableRTC;}
 
   // CDP1879 device methods from CDevice ...
 public:
@@ -106,6 +111,7 @@ protected:
 
   // Private member data...
 protected:
+  bool      m_fEnableRTC;     // TRUE if the RTC chip exists
   uint8_t   m_bStatus;        // contents of the status register
   uint8_t   m_bControl;       // last value written to the control register
   bool      m_fFreeze;        // infamous "freeze flag" (see comments!)

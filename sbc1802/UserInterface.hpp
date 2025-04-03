@@ -84,9 +84,9 @@ private:
   static CCmdArgList        m_argDataList, m_argDelayList;
   static CCmdArgList        m_argRangeList, m_argRangeOrNameList;
   static CCmdArgNumber      m_argUnit, m_argCapacity;
-  static CCmdArgNumber      m_argTxSpeed, m_argRxSpeed;
+  static CCmdArgNumber      m_argTxSpeed, m_argRxSpeed, m_argSpeed;
   static CCmdArgNumber      m_argLongDelay, m_argShortDelay;
-  static CCmdArgNumber      m_argFrequency;
+  static CCmdArgNumber      m_argFrequency, m_argOptWidth;
 
   // Modifier definitions ...
 private:
@@ -105,6 +105,7 @@ private:
   static CCmdModifier m_modReadOnly;
   static CCmdModifier m_modTxSpeed;
   static CCmdModifier m_modRxSpeed;
+  static CCmdModifier m_modSpeed;
   static CCmdModifier m_modShortDelay;
   static CCmdModifier m_modLongDelay;
   static CCmdModifier m_modSwitches;
@@ -114,6 +115,7 @@ private:
   static CCmdModifier m_modXModem;
   static CCmdModifier m_modAppend;
   static CCmdModifier m_modCRLF;
+  static CCmdModifier m_modWidth;
   static CCmdModifier m_modDelayList;
   static CCmdModifier m_modEnable;
 
@@ -130,9 +132,11 @@ private:
   static CCmdModifier * const m_modsDetach[];
   static CCmdModifier * const m_modsAttachDisk[];
   static CCmdModifier * const m_modsAttachTape[];
+  static CCmdModifier * const m_modsAttachPrinter[];
   static CCmdModifier * const m_modsDetachTape[];
   static CCmdVerb m_cmdAttachDisk, m_cmdDetachDisk;
   static CCmdVerb m_cmdAttachTape, m_cmdDetachTape;
+  static CCmdVerb m_cmdAttachPrinter, m_cmdDetachPrinter;
   static CCmdVerb * const g_aAttachVerbs[];
   static CCmdVerb * const g_aDetachVerbs[];
   static CCmdVerb m_cmdAttach, m_cmdDetach;
@@ -191,6 +195,7 @@ private:
   static bool DoDeposit(CCmdParser &cmd), DoExamine(CCmdParser &cmd);
   static bool DoAttachDisk(CCmdParser &cmd), DoDetachDisk(CCmdParser &cmd);
   static bool DoAttachTape(CCmdParser &cmd), DoDetachTape(CCmdParser &cmd);
+  static bool DoAttachPrinter(CCmdParser &cmd), DoDetachPrinter(CCmdParser &cmd);
   static bool DoRun(CCmdParser &cmd), DoContinue(CCmdParser &cmd);
   static bool DoStep(CCmdParser &cmd), DoReset(CCmdParser &cmd);
   static bool DoSetBreakpoint(CCmdParser &cmd), DoClearBreakpoint(CCmdParser &cmd);

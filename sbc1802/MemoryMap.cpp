@@ -114,6 +114,8 @@
 // REVISION HISTORY:
 // 17-JUN-22  RLA   New file.
 // 12-MAR-24  RLA   UT71 ROM should extend to $87FF, not $83FF!
+// 24-MAR-25  RLA   Add error message for writes to EPROM
+//                  Add EnablePIC() and EnableRTC()
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -129,6 +131,9 @@
 #include "CDP1877.hpp"          // CDP1877 programmable interrupt controller
 #include "CDP1879.hpp"          // CDP1879 real time clock
 #include "Memory.hpp"           // CMemory and CGenericMemory declarations
+#include "COSMACopcodes.hpp"    // COSMAC opcode definitions
+#include "CPU.hpp"              // CCPU base class definitions
+#include "COSMAC.hpp"           // declarations for this module
 #include "MemoryMap.hpp"        // declarations for this module
 using std::string;              // too lazy to type "std::string..."!
 
@@ -167,6 +172,7 @@ CMemoryMap::CMemoryMap (CGenericMemory *pRAM, CGenericMemory *pROM,
   assert((pRAM->Base() == RAMBASE)  &&  (pRAM->Size() == RAMSIZE));
   assert((pROM->Base() == ROMBASE)  &&  (pROM->Size() == ROMSIZE));
   assert((pMCR != NULL) && (pRTC != NULL)  &&  (pPIC != NULL));
+  m_fEnablePIC = m_fEnableRTC = true;
   m_pRAM = pRAM;  m_pROM = pROM;  m_pCPU = NULL;
   m_pMCR = pMCR;  m_pRTC = pRTC;  m_pPIC = pPIC;
 }
@@ -231,7 +237,7 @@ void CMemoryControl::DevWrite (address_t nPort, word_t bData)
   LOGF(TRACE, "MCR write 0x%02X (map=%s, MIEN=%d)", bData, MapToString(m_bMap), m_pPIC->GetMasterEnable());
 }
 
-CMemoryMap::CHIP_SELECT CMemoryMap::ChipSelect (uint8_t bMap, address_t &a)
+/*static*/ CMemoryMap::CHIP_SELECT CMemoryMap::ChipSelect(uint8_t bMap, address_t& a)
 {
   //++
   //   This routine will figure out what device - RAM, ROM, RTC, PIC or
@@ -328,8 +334,8 @@ word_t CMemoryMap::CPUread (address_t a) const
   switch (ChipSelect(m_pMCR->GetMap(), a)) {
     case CS_ROM: return m_pROM->CPUread(a);
     case CS_RAM: return m_pRAM->CPUread(a);
-    case CS_RTC: return m_pRTC->DevRead(a);
-    case CS_PIC: return m_pPIC->DevRead(a);
+    case CS_RTC: return m_fEnableRTC ? m_pRTC->DevRead(a) : 0;
+    case CS_PIC: return m_fEnablePIC ? m_pPIC->DevRead(a) : 0;
     case CS_MCR: return m_pMCR->DevRead(a);
     default:
       LOGF(WARNING, "invalid memory reference to %04X", LOWORD(a));
@@ -343,10 +349,19 @@ void CMemoryMap::CPUwrite (address_t a, word_t d)
   // The same idea as CPUread(), except this time write to a location...
   //--
   switch (ChipSelect(m_pMCR->GetMap(), a)) {
-    case CS_ROM: m_pROM->CPUwrite(a, d);  break;
+    case CS_ROM: 
+      if (m_pROM->IsWritable(a))
+        m_pROM->CPUwrite(a, d);
+      else
+        LOGF(WARNING, "write to ROM address 0x%04X at 0x%04X", a, m_pCPU->GetPC());
+      break;
     case CS_RAM: m_pRAM->CPUwrite(a, d);  break;
-    case CS_RTC: m_pRTC->DevWrite(a, d);  break;
-    case CS_PIC: m_pPIC->DevWrite(a, d);  break;
+    case CS_RTC:
+      if (m_fEnableRTC) m_pRTC->DevWrite(a, d);
+      break;
+    case CS_PIC:
+      if (m_fEnablePIC) m_pPIC->DevWrite(a, d);
+      break;
     case CS_MCR: m_pMCR->DevWrite(a, d);  break;
     default:
       LOGF(WARNING, "invalid memory reference to %04X", LOWORD(a));

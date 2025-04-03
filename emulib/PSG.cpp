@@ -74,7 +74,7 @@ CPSG::CPSG (const char *pszName, const char *pszType, const char *pszDescription
   //++
   //--
   memset(m_abRegisters, 0, sizeof(m_abRegisters));
-  m_bAddress = 0;
+  m_bAddress = 0;  m_fEnablePSG = true;
 }
 
 CPSG::~CPSG()
@@ -106,6 +106,7 @@ word_t CPSG::DevRead (address_t nRegister)
   // inputs in which case they read $FF.
   //--
   assert((nRegister >= GetBasePort()) && ((nRegister-GetBasePort()) < MAXPORT));
+  if (!m_fEnablePSG) return 0xFF;
   nRegister = (nRegister-GetBasePort());
   if (nRegister == 0) {
     // Read the address register ...
@@ -128,6 +129,7 @@ void CPSG::DevWrite (address_t nRegister, word_t bData)
   //   Write to a PSG register ...
   //--
   assert((nRegister >= GetBasePort()) && ((nRegister-GetBasePort()) < MAXPORT));
+  if (!m_fEnablePSG) return;
   nRegister = (nRegister-GetBasePort());
   if (nRegister == 0) {
     // Write the address register ...
@@ -145,9 +147,13 @@ void CPSG::ShowDevice (ostringstream &ofs) const
   //   This routine will dump the state of the internal PSG registers.
   // This is used by the user interface SHOW DEVICE command ...
   //--
-  ofs << FormatString("LastAddress = %03o", m_bAddress) << std::endl;
-  for (uint8_t i = 0; i < MAXREG; ++i) {
-    ofs << FormatString("R%02o=0x%02X ", i, m_abRegisters[i]);
-    if ((i%8) == 7) ofs << std::endl;
+  if (!IsPSGenabled()) {
+    ofs << FormatString("PSG DISABLED") << std::endl;
+  } else {
+    ofs << FormatString("LastAddress = %03o", m_bAddress) << std::endl;
+    for (uint8_t i = 0; i < MAXREG; ++i) {
+      ofs << FormatString("R%02o=0x%02X ", i, m_abRegisters[i]);
+      if ((i % 8) == 7) ofs << std::endl;
+    }
   }
 }

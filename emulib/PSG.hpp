@@ -23,6 +23,7 @@
 // REVISION HISTORY:
 // 72-FEB-24  RLA   New file.
 // 30-OCT-24  RLA   PAOUT and PBOUT are backwards!
+// 25-MAR-25  RLA   Add EnablePSG() ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -94,6 +95,13 @@ private:
   CPSG(const CPSG&) = delete;
   CPSG& operator= (CPSG const&) = delete;
 
+  // CPSG public properties ...
+public:
+  //   Enable or disable the PSG. If the PSG chip is disabled, then it's as if
+  // the PSG chip doesn't exist in the target system.
+  void EnablePSG (bool fEnable) {m_fEnablePSG = fEnable;}
+  bool IsPSGenabled() const {return m_fEnablePSG;}
+
   // CPSG device methods from CDevice ...
 public:
   virtual void ClearDevice() override;
@@ -122,4 +130,5 @@ protected:
 protected:
   uint8_t   m_abRegisters[MAXREG];  // the entire register file
   uint8_t   m_bAddress;             // register address
+  bool      m_fEnablePSG;           // TRUE if the PSG chip exists at all!
 };

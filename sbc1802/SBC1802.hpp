@@ -27,9 +27,9 @@
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
 
 // Program name and version ...
-#define PROGRAM      "sbc1802"  // used in prompts and error messages 
-#define SBCVER               2  // version number of this release
-#define CPUCLK    2500000UL     // CPU crystal frequency
+#define PROGRAM   "sbc1802"     // used in prompts and error messages 
+#define SBCVER          2       // version number of this release
+#define CPUCLK    5000000UL     // CPU crystal frequency
 #define BAUDCLK   4915200UL     // baud rate crystal frequency
 
 // SBC1802 memory configuration ...
@@ -118,5 +118,5 @@ extern class CTU58          *g_pTU58;         // TU58 drive emulator
 extern class CPSG           *g_pPSG1;         // AY-3-8912 programmable sound generator #1
 extern class CPSG           *g_pPSG2;         // AY-3-8912 programmable sound generator #2
 extern class CTwoPSGs       *g_pTwoPSGs;      // SBC1802 implementation of two PSGs
-extern class CCDP1851       *g_pPPI;          // CDP1851 programmable I/O interface
+extern class CPrinter       *g_pPPI;          // CDP1851 programmable I/O interface
 extern class CCDP1878       *g_pCTC;          // CDP1878 counter/timer

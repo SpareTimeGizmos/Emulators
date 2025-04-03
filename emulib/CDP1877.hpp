@@ -22,6 +22,7 @@
 // REVISION HISTORY:
 // 18-JUN-22  RLA   New file.
 // 12-JUN-24  RLA   Suppress Apple C++ warning for AcknowledgeRequest ...
+// 25-MAR-25  RLA   Add EnablePIC() ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -91,6 +92,12 @@ private:
 
   // Public properties ...
 public:
+  //   Enable or disable the PIC.  Note the difference between this and the
+  // Master Enable below - if this the PIC chip is disabled, then it's as if
+  // the PIC chip doesn't exist in the target system.  With Master Enable
+  // the PIC chip always exists, but the IRQ output is enabled or disabled.
+  void EnablePIC(bool fEnable) {m_fEnablePIC = fEnable;}
+  bool IsPICenabled() const {return m_fEnablePIC;}
   // Set or clear the master interrupt enable ...
   void SetMasterEnable (bool fEnable=true);
   bool GetMasterEnable() const {return m_fMIEN;}
@@ -149,6 +156,7 @@ protected:
 
   // Private member data...
 protected:
+  bool        m_fEnablePIC;     // TRUE if the PIC chip exists at all!
   bool        m_fMIEN;          // SBC1802 master interrupt enable
   uint8_t     m_bControl;       // last value written to the control register
   uint8_t     m_bPage;          //   "    "     "  "   "  "  page     "   "

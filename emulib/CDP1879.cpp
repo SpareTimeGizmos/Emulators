@@ -115,6 +115,7 @@ CCDP1879::CCDP1879 (address_t nBase, CEventQueue *pEvents)
   m_bDay = m_bMonth = 0;  m_fFreeze = false;
   m_fClockOut = m_f12hrMode = m_fLeapYear = false;
   m_bStatus = m_bControl = 0;  m_llClockDelay = 0;
+  m_fEnableRTC = true;
 }
 
 void CCDP1879::FreezeTime()
@@ -218,6 +219,7 @@ void CCDP1879::ToggleOutput()
   // falling edge of the clock output, so in effect this only interrupts
   // every other event!
   //--
+  if (!m_fEnableRTC) return;
   if (!(m_fClockOut = !m_fClockOut)) {
     m_bStatus |= RTCCIRQ;  CDevice::RequestInterrupt(true);
     LOGF(TRACE, "CDP1879 clock out interrupt!");
@@ -271,6 +273,7 @@ word_t CCDP1879::DevRead (address_t nRegister)
   // to the control register instead.
   //--
   assert((nRegister >= GetBasePort())  &&  ((nRegister-GetBasePort()) < RTCSIZE));
+  if (!m_fEnableRTC) return 0xFF;
   switch (nRegister - GetBasePort()) {
     case 0:                       return 0xFF;
     case 1:                       return 0xFF;
@@ -303,6 +306,7 @@ void CCDP1879::DevWrite (address_t nRegister, word_t bData)
   // the control register is of course not a NOP and does do something useful.
   //--
   assert((nRegister >= GetBasePort())  &&  ((nRegister-GetBasePort()) < RTCSIZE));
+  if (!m_fEnableRTC) return;
   switch (nRegister - GetBasePort()) {
     case 0:                                                           break;
     case 1:       UnFreezeTime();                                     break;
@@ -324,6 +328,7 @@ uint1_t CCDP1879::GetSense (address_t nSense, uint1_t bDefault)
   // request an interrupt any time either the alarm or clock bits are set
   // in the status register.
   //--
+  if (!m_fEnableRTC) return 0;
   return ((m_bStatus & RTCCIRQ) != 0) ? 1 : 0;
 }
 
@@ -332,21 +337,25 @@ void CCDP1879::ShowDevice(ostringstream &ofs) const
   //++
   // Dump the device state for the UI command "EXAMINE DISPLAY" ...
   //--
-  ofs << FormatString("Last time was %s %02d, %02d:%02d:%02d %s (%sleap year)\n",
-    FormatMonth(BCDtoBinary(m_bMonth & 0x7F)).c_str(), BCDtoBinary(m_bDay),
-    BCDtoBinary(m_bHours & 0x1F), BCDtoBinary(m_bMinutes), BCDtoBinary(m_bSeconds),
-    ISSET(m_bHours, RTCPMF) ? "PM" : "AM",
-    m_fLeapYear ? "" : "not a ");
-   
-   ofs << FormatString("Status=0x%02X, Control=0x%02X, Freeze=%d, LeapYear=%d\n",
-     m_bStatus, m_bControl, m_fFreeze, m_fLeapYear);
+  if (!m_fEnableRTC) {
+    ofs << FormatString("RTC DISABLED") << std::endl;
+  } else {
+    ofs << FormatString("Last time was %s %02d, %02d:%02d:%02d %s (%sleap year)\n",
+      FormatMonth(BCDtoBinary(m_bMonth & 0x7F)).c_str(), BCDtoBinary(m_bDay),
+      BCDtoBinary(m_bHours & 0x1F), BCDtoBinary(m_bMinutes), BCDtoBinary(m_bSeconds),
+      ISSET(m_bHours, RTCPMF) ? "PM" : "AM",
+      m_fLeapYear ? "" : "not a ");
 
-   if (m_llClockDelay > _SEC2NS(1))
-     ofs << FormatString("Square wave enabled, interval %llds\n", NSTOMS(m_llClockDelay) / 1000ULL);
-   else if (m_llClockDelay >= _HZ2NS(8))
-     ofs << FormatString("Square wave enabled, interval %lldms, (%ldHz)\n", NSTOMS(m_llClockDelay), NSTOHZ(m_llClockDelay));
-   else if (m_llClockDelay > 0)
-     ofs << FormatString("Square wave enabled, interval %lldus, (%ldHz)\n", NSTOUS(m_llClockDelay), NSTOHZ(m_llClockDelay));
-   else
-     ofs << "Square wave output disabled\n";
+    ofs << FormatString("Status=0x%02X, Control=0x%02X, Freeze=%d, LeapYear=%d\n",
+      m_bStatus, m_bControl, m_fFreeze, m_fLeapYear);
+
+    if (m_llClockDelay > _SEC2NS(1))
+      ofs << FormatString("Square wave enabled, interval %llds\n", NSTOMS(m_llClockDelay) / 1000ULL);
+    else if (m_llClockDelay >= _HZ2NS(8))
+      ofs << FormatString("Square wave enabled, interval %lldms, (%ldHz)\n", NSTOMS(m_llClockDelay), NSTOHZ(m_llClockDelay));
+    else if (m_llClockDelay > 0)
+      ofs << FormatString("Square wave enabled, interval %lldus, (%ldHz)\n", NSTOUS(m_llClockDelay), NSTOHZ(m_llClockDelay));
+    else
+      ofs << "Square wave output disabled\n"; \
+  }
 }

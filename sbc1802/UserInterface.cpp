@@ -45,6 +45,10 @@
 //      /CAPACITY=nnnnn         - set tape capacity, IN BLOCKS!
 //      /READ                   - make tape unit read only
 //      /WRITE                  - allow writing to this unit
+// 
+//   ATT*ACH PRI*NTER filename  - attach parallel port printer to text file
+//      /[NO]WID*TH=nn          - set printer width for line wrap
+//   DET*ACH PRI*NTER           - detach printer
 //
 //   DET*ACH TA*PE              - detach TU58 drive
 //      /UNIT=0|1               - tape drive unit, 0 or 1
@@ -112,11 +116,12 @@
 //   SE*T DEV*ICE name          - set device parameters
 //      /TX*SPEED=nnnn          - set SLU transmit speed, in CPS
 //      /RX*SPEED=nnnn          -  "   "  receive    "    "   "
+//      /SPE*ED=nnn             - set printer speed in CPS
 //      /SHO*RT=nnnn            - set IDE short delay, in microseconds
 //      /LO*NG=nnnn             -  "   "  long    "    "    "    "
 //      /SW*ITCHES=xx           - set toggle switches to xx
-//      /ENABLE                 - enable TLIO, DISK or TAPE
-//      /DISABLE                - disable  "     "       "
+//      /ENABLE                 - enable TLIO, DISK, TAPE, RTC, PIC, PPI, CTC, or PSG1/2
+//      /DISABLE                - disable  "     "     "    "    "    "    "        "
 //
 //   SH*OW CPU                  - show CPU details
 //   CL*EAR CPU                 - reset the CPU only
@@ -205,6 +210,9 @@
 //                  Report TLIO as port 1 only (rather than all ports)
 //  5-MAR-24  RLA   Add SET DISK and SET TAPE /ENABLE or /DISABLE
 //                  Change "SHOW DEVICE TU58" to "SHOW DEVICE TAPE"
+// 25-MAR-25  RLA   Add SET DEVICE xxx/ENABLE or /DISABLE for RTC, PIC,
+//                  PPI, CTC, and PSG1 & 2
+// 28-MAR-25  RLA   Add ATTACH PRINTER, DETACH PRINTER and SET DEVICE PRINTER.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -244,6 +252,7 @@
 #include "PSG.hpp"              // AY-3-8912 programmable sound generator
 #include "TwoPSGs.hpp"          // special hacks for two PSGs in the SBC1802
 #include "PPI.hpp"              // generic programmable I/O definitions
+#include "Printer.hpp"          // SBC1802 parallel printer port implementation
 #include "CDP1851.hpp"          // CDP1851 programmable I/O interface
 #include "Timer.hpp"            // generic counter/timer
 #include "CDP1878.hpp"          // CDP1878 specific counter/timer
@@ -286,6 +295,7 @@ CCmdArgNumber      CUI::m_argSwitches("switches", 16, 0, 255);
 CCmdArgNumber      CUI::m_argOptSwitches("switches", 16, 0, 255, true);
 CCmdArgNumber      CUI::m_argTxSpeed("TX speed (cps)", 10, 1, 100000UL);
 CCmdArgNumber      CUI::m_argRxSpeed("RX speed (cps)", 10, 1, 100000UL);
+CCmdArgNumber      CUI::m_argSpeed("speed (cps)", 10, 1, 100000UL);
 CCmdArgNumber      CUI::m_argShortDelay("short delay (us)", 10, 1, 1000000UL);
 CCmdArgNumber      CUI::m_argLongDelay("long delay (us)", 10, 1, 1000000UL);
 CCmdArgName        CUI::m_argOptDeviceName("device", true);
@@ -295,6 +305,7 @@ CCmdArgNumber      CUI::m_argCapacity("capacity", 10, 1, UINT32_MAX);
 CCmdArgNumber      CUI::m_argDelay("delay (ms)", 10, 1, 1000000UL);
 CCmdArgList        CUI::m_argDelayList("delay list", m_argDelay, true);
 CCmdArgNumber      CUI::m_argFrequency("frequency", 10, 1, UINT32_MAX);
+CCmdArgNumber      CUI::m_argOptWidth("line width", 10, 1, UINT32_MAX, true);
 
 // Modifier definitions ...
 CCmdModifier CUI::m_modFileFormat("FORM*AT", NULL, &m_argFileFormat);
@@ -309,6 +320,7 @@ CCmdModifier CUI::m_modByteCount("COU*NT", NULL, &m_argByteCount);
 CCmdModifier CUI::m_modROM("ROM", "RAM");
 CCmdModifier CUI::m_modTxSpeed("TX*SPEED", NULL, &m_argTxSpeed);
 CCmdModifier CUI::m_modRxSpeed("RX*SPEED", NULL, &m_argRxSpeed);
+CCmdModifier CUI::m_modSpeed("SPE*ED", NULL, &m_argSpeed);
 CCmdModifier CUI::m_modShortDelay("SHO*RT", NULL, &m_argShortDelay);
 CCmdModifier CUI::m_modLongDelay("LO*NG", NULL, &m_argLongDelay);
 CCmdModifier CUI::m_modUnit("UN*IT", NULL, &m_argUnit);
@@ -321,6 +333,7 @@ CCmdModifier CUI::m_modText("TE*XT", NULL);
 CCmdModifier CUI::m_modXModem("X*MODEM", NULL);
 CCmdModifier CUI::m_modAppend("APP*END", "OVER*WRITE");
 CCmdModifier CUI::m_modCRLF("CRLF", "NOCRLF");
+CCmdModifier CUI::m_modWidth("WID*TH", "NOWID*TH", &m_argOptWidth);
 CCmdModifier CUI::m_modDelayList("DEL*AY", NULL, &m_argDelayList);
 CCmdModifier CUI::m_modEnable("ENA*BLED", "DISA*BLED");
 
@@ -341,15 +354,18 @@ CCmdModifier * const CUI::m_modsAttachDisk[] = {&m_modCapacity, &m_modUnit, NULL
 CCmdModifier * const CUI::m_modsAttachTape[] = {&m_modReadOnly, &m_modUnit,
                                                 &m_modCapacity, NULL};
 CCmdModifier * const CUI::m_modsDetachTape[] = {&m_modUnit, NULL};
+CCmdModifier * const CUI::m_modsAttachPrinter[] = {&m_modWidth, NULL};
 CCmdVerb CUI::m_cmdAttachDisk("DI*SK", &DoAttachDisk, m_argsAttach, m_modsAttachDisk);
 CCmdVerb CUI::m_cmdDetachDisk("DI*SK", &DoDetachDisk, NULL, m_modsDetach);
 CCmdVerb CUI::m_cmdAttachTape("TA*PE", &DoAttachTape, m_argsAttach, m_modsAttachTape);
 CCmdVerb CUI::m_cmdDetachTape("TA*PE", &DoDetachTape, NULL, m_modsDetachTape);
+CCmdVerb CUI::m_cmdAttachPrinter("PRI*NTER", &DoAttachPrinter, m_argsAttach, m_modsAttachPrinter);
+CCmdVerb CUI::m_cmdDetachPrinter("PRI*NTER", &DoDetachPrinter, NULL, NULL);
 CCmdVerb * const CUI::g_aAttachVerbs[] = {
-  &m_cmdAttachDisk, &m_cmdAttachTape, NULL
+  &m_cmdAttachDisk, &m_cmdAttachTape, &m_cmdAttachPrinter, NULL
 };
 CCmdVerb * const CUI::g_aDetachVerbs[] = {
-  &m_cmdDetachDisk, &m_cmdDetachTape, NULL
+  &m_cmdDetachDisk, &m_cmdDetachTape, &m_cmdDetachPrinter, NULL
 };
 CCmdVerb CUI::m_cmdAttach("ATT*ACH", NULL, NULL, NULL, g_aAttachVerbs);
 CCmdVerb CUI::m_cmdDetach("DET*ACH", NULL, NULL, NULL, g_aDetachVerbs);
@@ -397,8 +413,9 @@ CCmdVerb CUI::m_cmdShowMemory("MEM*ORY", &DoShowMemory);
 CCmdArgument * const CUI::m_argsShowDevice[] = {&m_argOptDeviceName, NULL};
 CCmdArgument * const CUI::m_argsSetDevice[] = {&m_argDeviceName, NULL};
 CCmdModifier * const CUI::m_modsSetDevice[] = {
-    &m_modTxSpeed, &m_modRxSpeed, &m_modShortDelay,
-    &m_modLongDelay, &m_modSwitches, &m_modEnable, NULL
+    &m_modTxSpeed, &m_modRxSpeed, &m_modSpeed, &m_modShortDelay,
+    &m_modLongDelay, &m_modSwitches, &m_modEnable,
+    &m_modWidth, NULL
   };
 CCmdVerb CUI::m_cmdShowDevice("DEV*ICES", &DoShowDevice, m_argsShowDevice, NULL);
 CCmdVerb CUI::m_cmdSetDevice("DEV*ICE", &DoSetDevice, m_argsSetDevice, m_modsSetDevice);
@@ -734,6 +751,46 @@ bool CUI::DoDetachTape (CCmdParser &cmd)
   return true;
 }
 
+bool CUI::DoAttachPrinter (CCmdParser &cmd)
+{
+  //++
+  // Attach the printer emulation to a text file ...
+  //--
+  assert(g_pPPI != NULL);
+  
+  // Fail if the printer is already attached ...
+  if (g_pPPI->IsAttached()) {
+    CMDERRS("Printer unit already attached to " << g_pPPI->GetFileName());
+    return false;
+  }
+
+  // The default extension here is .TXT!
+  string sFileName = m_argFileName.GetFullPath();
+  if (!FileExists(sFileName)) {
+    string sDrive, sDir, sName, sExt;
+    SplitPath(sFileName, sDrive, sDir, sName, sExt);
+    sFileName = MakePath(sDrive, sDir, sName, ".txt");
+  }
+
+  // And set the options (if any) ...
+  if (m_modWidth.IsPresent())
+    g_pPPI->SetWidth(m_modWidth.IsNegated() ? 0 : m_argOptWidth.GetNumber());
+
+  // Attach the printer to the file ...
+  if (!g_pPPI->OpenFile(sFileName)) return false;
+  CMDOUTS("Printer attached to " << sFileName);
+  return true;
+}
+
+bool CUI::DoDetachPrinter (CCmdParser &cmd)
+{
+  //++
+  // Detach the printer from a file ...
+  //--
+  assert(g_pPPI != NULL);
+  g_pPPI->CloseFile();
+  return true;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////// EXAMINE and DEPOSIT COMMANDS /////////////////////////
@@ -1757,6 +1814,14 @@ bool CUI::DoSetDevice (CCmdParser &cmd)
     return true;
   }
 
+  // The printer is also a special case!
+  if (CCmdArgKeyword::Match(sDevice, "PRI*NTER")) {
+    if (m_modSpeed.IsPresent()) g_pPPI->SetSpeed(m_argSpeed.GetNumber());
+    if (m_modWidth.IsPresent())
+      g_pPPI->SetWidth(m_modWidth.IsNegated() ? 0 : m_argOptWidth.GetNumber());
+    return true;
+  }
+
   // Search for the corresponding CDevice object ...
   CDevice *pDevice = FindDevice(sDevice);
   if (pDevice == NULL) return false;
@@ -1776,6 +1841,18 @@ bool CUI::DoSetDevice (CCmdParser &cmd)
     if (m_modShortDelay.IsPresent()) g_pIDE->SetShortDelay(USTONS(m_argShortDelay.GetNumber()));
     if (m_modLongDelay.IsPresent()) g_pIDE->SetLongDelay(USTONS(m_argLongDelay.GetNumber()));
     if (m_modEnable.IsPresent()) g_pIDE->Enable(!m_modEnable.IsNegated());
+  } else if ((pDevice == g_pPIC) && m_modEnable.IsPresent()) {
+    g_pPIC->EnablePIC(!m_modEnable.IsNegated());
+    g_pMemoryMap->EnablePIC(!m_modEnable.IsNegated());
+  } else if ((pDevice == g_pRTC) && m_modEnable.IsPresent()) {
+    g_pRTC->EnableRTC(!m_modEnable.IsNegated());
+    g_pMemoryMap->EnableRTC(!m_modEnable.IsNegated());
+  } else if ((pDevice == g_pPPI) && m_modEnable.IsPresent()) {
+    g_pPPI->EnablePPI(!m_modEnable.IsNegated());
+  } else if ((pDevice == g_pCTC) && m_modEnable.IsPresent()) {
+    g_pCTC->EnableCTC(!m_modEnable.IsNegated());
+  } else if (((pDevice == g_pPSG1) || (pDevice == g_pPSG2)) && m_modEnable.IsPresent()) {
+    static_cast<CPSG *>(pDevice)->EnablePSG(!m_modEnable.IsNegated());
   }
 
   return true;

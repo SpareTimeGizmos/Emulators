@@ -55,6 +55,13 @@ public:
     CTL_MODE_BITPR  = 0xC0,   // individual port bits bit programmable
     CTL_MODE_BIDIR  = 0x80,   // bidirectional
     // Control register bits - STROBE/READY control (table II) ...
+    CTL_IOC_PORT_B  = 0x02,   // 0->select READY/STROBE A, 1->select B
+    CTL_IOC_UPD_RDY = 0x04,   // update READY per bit 6
+    CTL_IOC_UPD_STB = 0x08,   // update STROBE per bit 7
+    CTL_IOC_RDY_DATA= 0x10,   // READY data (when used as output)
+    CTL_IOC_STB_DATA= 0x20,   // STROBE data (when used as output)
+    CTL_IOC_RDY_OUT = 0x40,   // READY  is used as an output
+    CTL_IOC_STB_OUT = 0x80,   // STROBE  "   "   "  "   "
     // Control register bits - Logical conditions and mask (table III) ...
     CTL_INT_FNMASK  = 0x60,   // mask for interrupt function code
     CTL_INT_NAND    = 0x00,   // NAND of all masked bits
@@ -69,7 +76,6 @@ public:
   enum _CTL_REG_STATE {
     CTL_REG_IDLE,             // control register idle
     CTL_REG_BITP_MASK_NEXT,   // bit programmable direction mask next
-    CTL_REG_BITP_CTL_NEXT,    //  "    "     "     "    "    "     "
     CTL_REG_INTMASK_NEXT,     // interrupt bit mask next
   };
   typedef enum _CTL_REG_STATE CTL_REG_STATE;
@@ -100,11 +106,35 @@ public:
 
   // Unique public methods for CCDP1851 ...
 public:
+  // Return TRUE when port A or B is in bit programmable mode ...
+  bool IsBitModeA() const {return GetModeA() == BIT_PROGRAMMABLE;}
+  bool IsBitModeB() const {return GetModeB() == BIT_PROGRAMMABLE;}
   //   Asynchronously update any input pins for port A or B, IF that port is
   // set for bit programmable mode.  As an important side effect, cause an
   // interrupt if that particular bit is programmed as an interrupt source.
   virtual void UpdateInputA (uint8_t bData);
   virtual void UpdateInputB (uint8_t bData);
+  //   These methods are called when bit programmable mode is used and either
+  // READY or STROBE is configured as an output.  This lets any derived class
+  // know that the state of these pins has changed, and it can override these
+  // methods to take whatever action is necessary.
+  virtual void OutputReadyA  (uint1_t bNew) {};
+  virtual void OutputReadyB  (uint1_t bNew) {};
+  virtual void OutputStrobeA (uint1_t bNew) {};
+  virtual void OutputStrobeB (uint1_t bNew) {};
+  //   And these methods are called when bit programmable mode is used and
+  // either READY or STROBE is configured as an input.  Any derived class can
+  // override these and return whatever value is appropriate.  Note that they
+  // probably should be called InputReadyA() and InputReadyB(), but we can't
+  // because the CPPI class uses those names for something else!
+  virtual void UpdateReadyA  (uint1_t bNew)
+    {if (IsBitModeA() && (m_fRdyDirA == 0)) m_bReadyA  = bNew;  UpdateReadyStrobe();}
+  virtual void UpdateReadyB  (uint1_t bNew)
+    {if (IsBitModeB() && (m_fRdyDirB == 0)) m_bReadyB  = bNew;  UpdateReadyStrobe();}
+  virtual void UpdateStrobeA (uint1_t bNew)
+    {if (IsBitModeA() && (m_fStbDirA == 0)) m_bStrobeA = bNew;  UpdateReadyStrobe();}
+  virtual void UpdateStrobeB (uint1_t bNew)
+    {if (IsBitModeB() && (m_fStbDirB == 0)) m_bStrobeB = bNew;  UpdateReadyStrobe();}
 
   // Local methods ...
 private:
@@ -117,7 +147,8 @@ private:
   void WriteControl (uint8_t bData);
   // Handle the mode sete control port writes ...
   void ModeSet (uint8_t bData);
-  void SetBitProgrammable (uint8_t bPortAB, uint8_t bMask, uint8_t bControl);
+  void SetBitProgrammable (uint8_t bPortAB, uint8_t bMask);
+  void SetStrobeReady (uint8_t bControl);
   // Handle the interrupt control and enable control port writes ...
   void InterruptControl (uint8_t bData);
   void InterruptEnable (uint8_t bData);
@@ -125,6 +156,8 @@ private:
   bool InterruptMask (uint8_t bData, uint8_t bMask, uint8_t bIntFn);
   // Update the current interrupt request status ...
   virtual void UpdateInterrupts() override;
+  // Update the READY A/B and STROBE A/B status bits ..
+  void UpdateReadyStrobe();
   // COnvert the control state to a string for debugging ...
   static const char *ControlToString (CTL_REG_STATE nState);
 
@@ -140,4 +173,11 @@ private:
   address_t m_nIntSenseA;           // sense flag (EF) for A interrupt request
   address_t m_nIntSenseB;           //   "     "   "    "  B  "    "    "   "
   uint8_t   m_bStatus;              // current status byte
+  //   These are used only in bit programmable mode when READY A/B and STROBE A/B
+  // are configured as general purpose I/Os.  Otherwise READY A/B and STROBE A/B
+  // have their usual handshaking assignments instead.
+  uint1_t m_fRdyDirA, m_fRdyDirB;   // 1 if READY  A or B is an output
+  uint1_t m_fStbDirA, m_fStbDirB;   // "  " STROBE "  " "  "  "   "
+  uint1_t m_bReadyA,  m_bReadyB;    // last state of READY  A or B inputs or outputs
+  uint1_t m_bStrobeA, m_bStrobeB;   //  "     "   "  STROBE "  " "   "    "    "
 };

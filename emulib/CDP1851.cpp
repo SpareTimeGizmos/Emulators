@@ -41,6 +41,7 @@
 // 
 // REVISION HISTORY:
 // 31-OCT-24  RLA   New file.
+// 27-MAR-25  RLA   Support READY A/B and STROBE A/B pins in bit programmable mode
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -85,6 +86,8 @@ void CCDP1851::ClearDevice()
   //m_bMode = CTL_RESET;
   //m_bInputA = m_bOutputA = m_bInputB = m_bOutputB = 0;
   //m_bInputC = m_bOutputC = m_bStatus = 0;
+  m_fRdyDirA = m_fRdyDirB = m_fStbDirA = m_fStbDirB = 0;
+  m_bReadyA  = m_bReadyB  = m_bStrobeA = m_bStrobeB = 0;
 }
 
 /*static*/ const char *CCDP1851::ControlToString (CTL_REG_STATE nState)
@@ -95,7 +98,6 @@ void CCDP1851::ClearDevice()
   switch (nState) {
     case CTL_REG_IDLE:            return "IDLE";
     case CTL_REG_BITP_MASK_NEXT:  return "BIT PROGRAMMABLE MASK NEXT";
-    case CTL_REG_BITP_CTL_NEXT:   return "BIT PROGRAMMABLE CONTROL NEXT";
     case CTL_REG_INTMASK_NEXT:    return "INTERRUPT MASK NEXT";
     default: assert(false);
   }
@@ -178,6 +180,11 @@ void CCDP1851::UpdateInterrupts()
   // request depending on the state of the INT A or INT B status bits.
   //--
 
+  // If the PPI is disabled, then do nothing ...
+  if (!IsPPIenabled()) {
+    RequestInterruptA(false);  RequestInterruptB(false);  return;
+  }
+
   //    Note that the bottom four bits of the status register are used for the
   // READY A, STROBE A, READY B and STROBE B bits, HOWEVER these bits are active
   // only if the associated port is in the bit programmable mode.  These bits
@@ -194,8 +201,8 @@ void CCDP1851::UpdateInterrupts()
   }
 
   // Check for bit programmable interrupts ...
-  if (m_fIENA && (m_ModeA == BIT_PROGRAMMABLE) && InterruptMask(MaskInput(m_bInputA, m_bDDRA), m_bIntMaskA, m_bIntFnA)) m_bStatus |= STS_AINT;
-  if (m_fIENB && (m_ModeB == BIT_PROGRAMMABLE) && InterruptMask(MaskInput(m_bInputB, m_bDDRB), m_bIntMaskB, m_bIntFnB)) m_bStatus |= STS_BINT;
+  if (m_fIENA && (IsBitModeA()) && InterruptMask(MaskInput(m_bInputA, m_bDDRA), m_bIntMaskA, m_bIntFnA)) m_bStatus |= STS_AINT;
+  if (m_fIENB && (IsBitModeB()) && InterruptMask(MaskInput(m_bInputB, m_bDDRB), m_bIntMaskB, m_bIntFnB)) m_bStatus |= STS_BINT;
 
   // Update the interrupt requests accordingly ...
   m_fIRQA = ISSET(m_bStatus, STS_AINT);
@@ -204,12 +211,36 @@ void CCDP1851::UpdateInterrupts()
   RequestInterruptB(m_fIRQB);
 }
 
+void CCDP1851::UpdateReadyStrobe()
+{
+  //++
+  //   This routine will update the state of the READY A & B and STROBE A & B
+  // bits in the status register.  When port A or B is in bit programmable mode,
+  // then bits 0..3 of the status indicate the state of the READY A/B and STROBE
+  // A/B pins if those pins are configured as inputs. But if they're not
+  // configured as inputs, then what happens then?  I'm assuming these status
+  // bits still reflect the state of the pins even as outputs.  And what if the
+  // port is not in bit programmable mode?  Do these bits indicate the current
+  // state of the actual handshaking signals?  I'm assuming they don't and are
+  // always zero, but the data sheet doesn't answer any of these questions.
+  //--
+  m_bStatus &= 0x0F;
+  if (IsBitModeA()) {
+    if (m_bReadyA)  m_bStatus |= STS_ARDY;
+    if (m_bStrobeA) m_bStatus |= STS_ASTB;
+  }
+  if (IsBitModeB()) {
+    if (m_bReadyB)  m_bStatus |= STS_BRDY;
+    if (m_bStrobeB) m_bStatus |= STS_BSTB;
+  }
+}
+
 uint8_t CCDP1851::ReadStatus()
 {
   //++
   // Read the status register ...
   //--
-  UpdateInterrupts();
+  UpdateInterrupts();  UpdateReadyStrobe();
   return m_bStatus;
 }
 
@@ -249,20 +280,12 @@ void CCDP1851::ModeSet (uint8_t bData)
   }
 }
 
-void CCDP1851::SetBitProgrammable (uint8_t bPortAB, uint8_t bMask, uint8_t bControl)
+void CCDP1851::SetBitProgrammable (uint8_t bPortAB, uint8_t bMask)
 {
   //++
   //   This method handles the bit programmable mode set command. This actually
-  // takes three bytes - the original command byte (which selects port A or B),
-  // the mask bit (a 1 bit selects an output pin, 0 selects input), and an I/O
-  // control byte.  This last byte determines whether the STROBE and READY bits
-  // associated with the selected port are used as generic input or output bits.
-  // 
-  //   That part - programming the STROBE and READY pins as general purpose
-  // inputs and outputs - is not currently implemented.  At the moment we just
-  // ignore the control byte.  Unfortunately this doesn't fit well with the
-  // IBF/OBE bits implemented by the generic PPI class, and I'll deal with that
-  // later!
+  // takes two bytes - the original command byte (which selects port A or B),
+  // and the mask bit (a 1 bit selects an output pin, 0 selects input).
   //--
   if (ISSET(bPortAB, CTL_MODE_SET_A)) {
     SetModeA(BIT_PROGRAMMABLE);  SetDDRA(bMask);
@@ -270,7 +293,42 @@ void CCDP1851::SetBitProgrammable (uint8_t bPortAB, uint8_t bMask, uint8_t bCont
   if (ISSET(bPortAB, CTL_MODE_SET_B)) {
     SetModeB(BIT_PROGRAMMABLE);  SetDDRB(bMask);
   }
-  // bControl byte is not currently implemented!
+}
+
+void CCDP1851::SetStrobeReady (uint8_t bControl)
+{
+  //++
+  //    This routine processes the TABLE II "STROBE/READY I/O CONTROL" output
+  // byte.  In bit programming mode the STROBE and READY pins can be used as
+  // general purpose inputs and outputs, and this command both programs their
+  // direction and (if they're outputs) their current state.
+  // 
+  //    It's not clear what happens if you execute this command and the
+  // associated port ISN'T in bit programmable mode.  I assume it's ignored.
+  //--
+  if (ISSET(bControl, CTL_IOC_PORT_B) && IsBitModeB()) {
+    if (ISSET(bControl, CTL_IOC_UPD_RDY)) {
+      m_fRdyDirB = ISSET(bControl, CTL_IOC_RDY_OUT) ? 1 : 0;
+      if (m_fRdyDirB)
+        OutputReadyB((m_bReadyB = ISSET(bControl, CTL_IOC_RDY_DATA) ? 1 : 0));
+    }
+    if (ISSET(bControl, CTL_IOC_UPD_STB)) {
+      m_fStbDirB = ISSET(bControl, CTL_IOC_STB_OUT) ? 1 : 0;
+      if (m_fStbDirB)
+        OutputStrobeB((m_bStrobeB = ISSET(bControl, CTL_IOC_STB_DATA) ? 1 : 0));
+    }
+  } else if (IsBitModeA()) {
+    if (ISSET(bControl, CTL_IOC_UPD_RDY)) {
+      m_fRdyDirA = ISSET(bControl, CTL_IOC_RDY_OUT) ? 1 : 0;
+      if (m_fRdyDirA)
+        OutputReadyA((m_bReadyA = ISSET(bControl, CTL_IOC_RDY_DATA) ? 1 : 0));
+    }
+    if (ISSET(bControl, CTL_IOC_UPD_STB)) {
+      m_fStbDirA = ISSET(bControl, CTL_IOC_STB_OUT) ? 1 : 0;
+      if (m_fStbDirA)
+        OutputStrobeA((m_bStrobeA = ISSET(bControl, CTL_IOC_STB_DATA) ? 1 : 0));
+    }
+  }
 }
 
 void CCDP1851::InterruptControl (uint8_t bData)
@@ -317,9 +375,10 @@ void CCDP1851::WriteControl (uint8_t bData)
 
     // Possible control bytes when we're not expecting anything special ...
     case CTL_REG_IDLE:
-           if ((bData & 0x03) == 0x03) ModeSet(bData);
+      if ((bData & 0x03) == 0x03) ModeSet(bData);
       else if ((bData & 0x87) == 0x05) InterruptControl(bData);
       else if ((bData & 0x07) == 0x01) InterruptEnable(bData);
+      else if ((bData & 0x01) == 0x00) SetStrobeReady(bData);
       else
         LOGF(WARNING, "invalid CDP1851 control byte 0x%02X", bData);
       break;
@@ -335,12 +394,7 @@ void CCDP1851::WriteControl (uint8_t bData)
 
     // Arguments for the bit programmable mode set ...
     case CTL_REG_BITP_MASK_NEXT:
-      //   Save the mask for bit programmable mode in m_bLastControl and wait
-      // for the strobe/ready I/O control byte next  ...
-      m_ControlState = CTL_REG_BITP_CTL_NEXT;  break;
-    case CTL_REG_BITP_CTL_NEXT:
-      // We have the whole command now - set the bit programmable mode ...
-      SetBitProgrammable(m_bPortAB, m_bLastControl, bData);
+       SetBitProgrammable(m_bPortAB, bData);
       m_ControlState = CTL_REG_IDLE;
       break;
 
@@ -383,7 +437,7 @@ void CCDP1851::UpdateInput##port (uint8_t bData)                       \
 // UpdateInput routines for ports A and B ...
 UPDATEINPUT(A)
 UPDATEINPUT(B)
-
+ 
 void CCDP1851::DevWrite (address_t nPort, uint8_t bData)
 {
   //++
@@ -395,6 +449,7 @@ void CCDP1851::DevWrite (address_t nPort, uint8_t bData)
   // systems might not be the same, but I'm lazy today.
   //--
   assert(nPort >= GetBasePort());
+  if (!IsPPIenabled()) return;
   nPort = ((nPort-GetBasePort()) >> 1) + 1;
   switch (nPort) {
     case PORTA:   WriteA(bData);        break;
@@ -412,6 +467,7 @@ uint8_t CCDP1851::DevRead (address_t nPort)
   // DevWrite() about why the port addressing is a little weird!!
   //--
   assert(nPort >= GetBasePort());
+  if (!IsPPIenabled()) return 0xFF;
   nPort = ((nPort-GetBasePort()) >> 1) + 1;
   switch (nPort) {
     case PORTA:   return ReadA();
@@ -437,6 +493,7 @@ uint1_t CCDP1851::GetSense (address_t nSense, uint1_t bDefault)
   // a logical OR of both A and B IRQs.  The same applies to READY A/B.
   //--
   uint1_t bFlag = bDefault;
+  if (!IsPPIenabled()) return 0;
   if ((nSense == m_nReadySenseA) && IsReadyA()) bFlag |= 1;
   if ((nSense == m_nReadySenseB) && IsReadyB()) bFlag |= 1;
   UpdateInterrupts();
@@ -451,20 +508,34 @@ void CCDP1851::ShowDevice (ostringstream &ofs) const
   //   This routine will dump the state of the internal PPI registers.
   // It's used for debugging by the user interface SHOW DEVICE command.
   //--
-  ofs << FormatString("CDP1851 control state=%s, last control=0x%02X, port A/B=0x%02X, status=0x%02X\n",
-    ControlToString(m_ControlState), m_bLastControl, m_bPortAB, m_bStatus);
-  ofs << std::endl;
-  ofs << FormatString("PORT A %s mode, IBUF=0x%02X, OBUF=0x%02X, DDR=0x%02X, RDY=%d\n",
-    ModeToString(m_ModeA), m_bInputA, m_bOutputA, m_bDDRA, IsReadyA());
-  ofs << FormatString("       IntMask=0x%02X, IntFn=0x%02X, ReadySense=%d, IntSense=%d\n",
-    m_bIntMaskA, m_bIntFnA, m_nReadySenseA, m_nIntSenseA);
-  ofs << FormatString("       IBF=%d, OBE=%d, IEN=%d, IRQ=%d\n",
-    m_fIBFA, m_fOBEA, m_fIENA, m_fIRQA);
-  ofs << std::endl;
-  ofs << FormatString("PORT B %s mode, IBUF=0x%02X, OBUF=0x%02X, DDR=0x%02X, RDY=%d\n",
-    ModeToString(m_ModeB), m_bInputB, m_bOutputB, m_bDDRB, IsReadyB());
-  ofs << FormatString("       IntMask=0x%02X, IntFn=0x%02X, ReadySense=%d, IntSense=%d\n",
-    m_bIntMaskB, m_bIntFnB, m_nReadySenseB, m_nIntSenseB);
-  ofs << FormatString("       IBF=%d, OBE=%d, IEN=%d, IRQ=%d\n",
-    m_fIBFB, m_fOBEB, m_fIENB, m_fIRQB);
+  if (!IsPPIenabled()) {
+    ofs << FormatString("PPI DISABLED") << std::endl;
+  } else {
+    ofs << FormatString("CDP1851 control state=%s\n", ControlToString(m_ControlState));
+    ofs << FormatString("CDP1851 last control=0x%02X, port A/B=0x%02X, status=0x%02X\n",
+      m_bLastControl, m_bPortAB, m_bStatus);
+    ofs << std::endl;
+    ofs << FormatString("PORT A %s mode, IBUF=0x%02X, OBUF=0x%02X, DDR=0x%02X, RDY=%d\n",
+      ModeToString(m_ModeA), m_bInputA, m_bOutputA, m_bDDRA, IsReadyA());
+    ofs << FormatString("       IntMask=0x%02X, IntFn=0x%02X, ReadySense=%d, IntSense=%d\n",
+      m_bIntMaskA, m_bIntFnA, m_nReadySenseA, m_nIntSenseA);
+    ofs << FormatString("       IBF=%d, OBE=%d, IEN=%d, IRQ=%d\n",
+      m_fIBFA, m_fOBEA, m_fIENA, m_fIRQA);
+    if (IsBitModeA()) {
+      ofs << FormatString("       ReadyDir=%s, Ready=%d, StrobeDir=%s, Strobe=%d\n",
+        m_fRdyDirA ? "OUT" : "IN", m_bReadyA, m_fStbDirA ? "OUT" : "IN", m_bStrobeA);
+    }
+    ofs << std::endl;
+    ofs << FormatString("PORT B %s mode, IBUF=0x%02X, OBUF=0x%02X, DDR=0x%02X, RDY=%d\n",
+      ModeToString(m_ModeB), m_bInputB, m_bOutputB, m_bDDRB, IsReadyB());
+    ofs << FormatString("       IntMask=0x%02X, IntFn=0x%02X, ReadySense=%d, IntSense=%d\n",
+      m_bIntMaskB, m_bIntFnB, m_nReadySenseB, m_nIntSenseB);
+    ofs << FormatString("       IBF=%d, OBE=%d, IEN=%d, IRQ=%d\n",
+      m_fIBFB, m_fOBEB, m_fIENB, m_fIRQB);
+    if (IsBitModeB()) {
+      ofs << FormatString("       ReadyDir=%s, Ready=%d, StrobeDir=%s, Strobe=%d\n",
+        m_fRdyDirB ? "OUT" : "IN", m_bReadyB, m_fStbDirB ? "OUT" : "IN", m_bStrobeB);
+    }
+    ofs << std::endl;
+  }
 }

@@ -119,6 +119,7 @@
 //    
 // REVISION HISTORY:
 // 18-JUN-22  RLA   New file.
+// 25-MAR-25  RLA   Add EnablePIC() ...
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -144,6 +145,7 @@ CCDP1877::CCDP1877 (address_t nBase)
   //--
   m_bControl = m_bPage = m_bMask = 0;
   m_nVectorByte = 0;  m_fMIEN = false;
+  m_fEnablePIC = true;
 }
 
 void CCDP1877::SetMasterEnable (bool fEnable)
@@ -289,7 +291,7 @@ bool  CCDP1877::IsRequested() const
   // pending interrupt on any UNMASKED interrupt level.  And in the case of the
   // SBC1802, the master interrupt enable must be set as well.
   //--
-  if (!m_fMIEN) return false;
+  if (!m_fMIEN || !m_fEnablePIC) return false;
   return (FindInterrupt() > 0);
 }
 
@@ -383,15 +385,18 @@ void CCDP1877::ShowDevice (ostringstream &ofs) const
   //++
   // Dump the device state for the UI command "EXAMINE DISPLAY" ...
   //--
-  ofs << FormatString("Control register 0x%02X, page 0x%02X, mask 0x%02X, vector %d\n",
-    m_bControl, m_bPage, m_bMask, m_nVectorByte);
-  CPriorityInterrupt::IRQLEVEL nLevel = FindInterrupt();
-  if (nLevel > 0)
-    ofs << FormatString("Active request at IRQ%d", nLevel-1);
-  else
-    ofs << "No active requests";
-  ofs << FormatString(", master interrupts are %s",
-    m_fMIEN ? "ENABLED" : "disabled");
-
+  if (!m_fEnablePIC) {
+    ofs << FormatString("PIC DISABLED") << std::endl;
+  } else {
+    ofs << FormatString("Control register 0x%02X, page 0x%02X, mask 0x%02X, vector %d\n",
+      m_bControl, m_bPage, m_bMask, m_nVectorByte);
+    CPriorityInterrupt::IRQLEVEL nLevel = FindInterrupt();
+    if (nLevel > 0)
+      ofs << FormatString("Active request at IRQ%d", nLevel - 1);
+    else
+      ofs << "No active requests";
+    ofs << FormatString(", master interrupts are %s",
+      m_fMIEN ? "ENABLED" : "disabled");
+  }
 }
 

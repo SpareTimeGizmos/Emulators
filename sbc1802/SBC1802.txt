@@ -23,6 +23,10 @@ SBC1802 COMMANDS
   DET*ACH TA*PE              - detach TU58 drive
      /UNIT=0|1               - tape drive unit, 0 or 1
 
+  ATT*ACH PRI*NTER filename  - attach parallel port printer to text file
+     /[NO]WID*TH=nn          - set printer width for line wrap
+  DET*ACH PRI*NTER           - detach printer
+
   E*XAMINE xxxx              - display just address xxxx (hex)
      xxxx-xxxx               - display all addresses in the range
      xxxx, xxxx, ...         - display multiple addresses or ranges
@@ -85,11 +89,12 @@ SBC1802 COMMANDS
   SE*T DEV*ICE name          - set device parameters
      /TX*SPEED=nnnn          - set SLU transmit speed, in CPS
      /RX*SPEED=nnnn          -  "   "  receive    "    "   "
+     /SPE*ED=nnn             - set printer speed in CPS
      /SHO*RT=nnnn            - set IDE short delay, in microseconds
      /LO*NG=nnnn             -  "   "  long    "    "    "    "
      /SW*ITCHES=xx           - set toggle switches to xx
-     /ENABLE                 - enable TLIO
-     /DISABLE                - disable  "
+     /ENABLE                 - enable TLIO, DISK, TAPE, RTC, PIC, PPI, CTC, or PSG1/2
+     /DISABLE                - disable  "     "     "    "    "    "    "        "
 
   SH*OW CPU                  - show CPU details
   CL*EAR CPU                 - reset the CPU only

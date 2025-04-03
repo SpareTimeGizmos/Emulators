@@ -72,6 +72,7 @@
 //  4-JUL-22  RLA   Add memory mapped I/O support.
 // 26-AUG-22  RLA   Clean up Linux/WIN32 conditionals.
 //  5-MAR-24  RLA   Add ClearROM() and change ClearRAM to use IsRAM() ...
+// 24-MAR-25  RLA   Add warning for write to unwritable memory
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -129,7 +130,7 @@ word_t CGenericMemory::CPUread (address_t a) const
   assert(IsValid(a));
   if (IsIO(a))
     return m_Devices.DevRead(a);
-  else if (ISSET(GetFlags(a), MEM_READ))
+  else if (IsReadable(a))
     return MemRead(a);
   else
     return WORD_MAX;
@@ -146,8 +147,10 @@ void CGenericMemory::CPUwrite (address_t a, word_t d)
   assert(IsValid(a));
   if (IsIO(a))
     m_Devices.DevWrite(a, d);
-  else if (ISSET(GetFlags(a), MEM_WRITE))
+  else if (IsWritable(a))
     MemWrite(a, d);
+  else
+    LOGF(WARNING, "write to un-writable memory at 0x%04x", a);
 }
 
 void CGenericMemory::SetFlags (address_t nFirst, address_t nLast, uint8_t bSet, uint8_t bClear)

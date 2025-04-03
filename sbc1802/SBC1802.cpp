@@ -1,3 +1,9 @@
+//TODO
+// NEED PRINTER EMULATION
+//    ATTACH PRINTER file
+//    SET DEVICE PRINTER/DISABLE
+//    SET DEVICE PRINTER/WIDTH=nn?
+
 //++
 // SBC1802.cpp - SBC1802 Emulator main program
 //
@@ -74,6 +80,7 @@
 #include "TwoPSGs.hpp"          // SBC1802 implementation of two PSGs
 #include "PPI.hpp"              // generic programmable I/O definitions
 #include "CDP1851.hpp"          // CDP1851 programmable I/O interface
+#include "Printer.hpp"          // parallel port printer interface
 #include "Timer.hpp"            // generic counter/timer emulation
 #include "CDP1878.hpp"          // CDP1878 counter/timer
 #include "UserInterface.hpp"    // SBC1802 user interface parse table definitions
@@ -108,7 +115,7 @@ CTU58           *g_pTU58        = NULL; // TU58 drive emulator
 CPSG            *g_pPSG1        = NULL; // AY-3-8912 programmable sound generator #1
 CPSG            *g_pPSG2        = NULL; // AY-3-8912 programmable sound generator #2
 CTwoPSGs        *g_pTwoPSGs     = NULL; // SBC1802 implementation of two PSGs
-CCDP1851        *g_pPPI         = NULL; // CDP1851 programmable I/O interface
+CPrinter        *g_pPPI         = NULL; // CDP1851 programmable I/O interface
 CCDP1878        *g_pCTC         = NULL; // CDP1878 counter/timer
 
 
@@ -141,6 +148,7 @@ static void CreateBaseBoard()
   g_pMemoryMap = DBGNEW CMemoryMap(g_pRAM, g_pROM, g_pMCR, g_pRTC, g_pPIC);
   g_pCPU = DBGNEW CCOSMAC(g_pMemoryMap, g_pEvents, g_pPIC);
   g_pCPU->SetCrystalFrequency(CPUCLK);
+  g_pMemoryMap->SetCPU(g_pCPU);
 
   //   Create the two level I/O controller and attach it to ALL seven CPU I/O
   // instructions plus all four EF inputs.  The Q output, which isn't really
@@ -197,8 +205,8 @@ static void CreateExtensionBoard()
   g_pTLIO->InstallSense(SLU1_GROUP, g_pSLU1, SLU1_IRQ_EF);
   g_pTLIO->InstallSense(SLU1_GROUP, g_pSLU1, SLU1_SID_EF);
 
-  // CDP1851 programmable I/O interface ...
-  g_pPPI = DBGNEW CCDP1851("PPI", PPI_PORT, g_pEvents, PPI_ARDY_EF, PPI_BRDY_EF, PPI_IRQ_EF, PPI_IRQ_EF);
+  // CDP1851 programmable I/O interface w/parallel printer ...
+  g_pPPI = DBGNEW CPrinter("PPI", PPI_PORT, g_pEvents);
   g_pPPI->AttachInterruptA(g_pPIC->GetLevel(IRQ_PPI));
   g_pPPI->AttachInterruptB(g_pPIC->GetLevel(IRQ_PPI));
   g_pTLIO->InstallDevice(PPI_GROUP, g_pPPI);

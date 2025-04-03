@@ -26,6 +26,7 @@
 // REVISION HISTORY:
 // 16-JUN-22  RLA   New file.
 // 19-JUN-22  RLA   Split out CMemoryControl
+// 24-MAR-25  RLA   Add SetCPU(), EnablePIC() and EnableRTC().
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -128,6 +129,14 @@ private:
   CMemoryMap (const CMemoryMap &) = delete;
   CMemoryMap& operator= (CMemoryMap const &) = delete;
 
+  // CMemoryMap properties ...
+public:
+  void SetCPU (CCPU *pCPU) {assert(pCPU != NULL);  m_pCPU = pCPU;}
+  void EnablePIC (bool fEnable) {m_fEnablePIC = fEnable;}
+  bool IsPICenabled() const {return m_fEnablePIC;}
+  void EnableRTC (bool fEnable) {m_fEnableRTC = fEnable;}
+  bool IsRTCenabled() const {return m_fEnableRTC;}
+
 public:
   // CPU memory access functions ...
   virtual word_t CPUread (address_t a) const;
@@ -148,4 +157,6 @@ private:
   CMemoryControl* m_pMCR;     // memory control register
   CCDP1879       *m_pRTC;     // the CDP1879 real time clock
   CCDP1877       *m_pPIC;     // the CDP1877 programmable interrupt controller
+  bool      m_fEnablePIC;     // TRUE if the PIC is enabled
+  bool      m_fEnableRTC;     // TRUE if the RTC is enabled
 };

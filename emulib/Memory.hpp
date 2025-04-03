@@ -50,6 +50,7 @@
 // 21-JAN-20  RLA   Remove singleton assumptions.
 // 16-JUN-22  RLA   Split up CMemory interface and CGenericMemory implementation
 // 17-JUN-22  RLA   Add base/offset feature
+// 24-MAR-25  RLA   Add IsReadable() and IsWritable()
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -96,6 +97,8 @@ public:
   virtual void CPUwrite (address_t a, word_t d) = 0;
   virtual bool IsBreak (address_t a) const = 0;
 //virtual bool IsIO (address_t a) const = 0;
+//virtual bool IsReadable (address_t a) const = 0;
+//virtual bool IsWritable (address_t a) const = 0;
 };
 
 
@@ -151,6 +154,12 @@ public:
   // And ROM is defined as R/O memory that's NOT an I/O device ...
   virtual bool IsROM (address_t a) const
     {assert(IsValid(a));  return (GetFlags(a) & (MEM_READ|MEM_WRITE|MEM_IO)) == MEM_READ;}
+  // Return TRUE for any memory that's readable, I/O or not ...
+  virtual bool IsReadable (address_t a) const
+    {assert(IsValid(a));  return ISSET(GetFlags(a), MEM_READ);}
+  // Return TRUE for any memory that's writable, I/O or not ...
+  virtual bool IsWritable (address_t a) const
+    {assert(IsValid(a));  return ISSET(GetFlags(a), MEM_WRITE);}
   // Return true if this address is a memory mapped I/O device ...
   virtual bool IsIO (address_t a) const
     {assert(IsValid(a));  return ISSET(GetFlags(a), MEM_IO);}

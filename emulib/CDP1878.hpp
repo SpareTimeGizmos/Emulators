@@ -8,6 +8,7 @@
 //
 // REVISION HISTORY:
 //  2-NOV-24  RLA   New file.
+// 25-MAR-25  RLA   Add EnableCTC() ...
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -74,6 +75,10 @@ private:
 public:
   // Return the specific timer subtype ...
   virtual TIMER_TYPE GetType() const {return TIMER_CDP1878;}
+  //   Enable or disable the CTC. If the CTC chip is disabled, then it's as if
+  // the CTC chip doesn't exist in the target system.
+  void EnableCTC (bool fEnable) {m_fEnableCTC = fEnable;}
+  bool IsCTCenabled() const {return m_fEnableCTC;}
   // Set the clock frequency for timers A and B ...
   void SetClockA (uint32_t fFrequency) {m_TimerA.SetClock(fFrequency);}
   void SetClockB (uint32_t fFrequency) {m_TimerB.SetClock(fFrequency);}
@@ -118,6 +123,7 @@ private:
 
   // Private member data...
 private:
+  bool      m_fEnableCTC;     // TRUE if the CTC chip exists
   CTimer    m_TimerA;         // counter/timer unit 1
   CTimer    m_TimerB;         // counter/timer unit 2
   address_t m_nSenseInt;      // sense flag (EF) for interrupts

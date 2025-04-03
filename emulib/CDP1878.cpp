@@ -32,6 +32,7 @@
 // 
 // REVISION HISTORY:
 //  2-NOV-24  RLA   New file.
+// 25-MAR-25  RLA   Add EnableCTC() ...
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -60,6 +61,7 @@ CCDP1878::CCDP1878 (const char *pszName, CEventQueue *pEvents,
   m_nSenseInt = nSenseInt;  m_nSenseA = nSenseA;  m_nSenseB = nSenseB;
   m_TimerA.SetCallback(&TimerCallback, this);
   m_TimerB.SetCallback(&TimerCallback, this);
+  m_fEnableCTC = true;
   ClearDevice();
 }
 
@@ -85,7 +87,7 @@ uint8_t CCDP1878::UpdateStatus()
   m_fIRQ = false;
   if (ISSET(m_bStatus, STS_A) && m_TimerA.GetIEN()) m_fIRQ = true;
   if (ISSET(m_bStatus, STS_B) && m_TimerB.GetIEN()) m_fIRQ = true;
-  RequestInterrupt(m_fIRQ);
+  RequestInterrupt(m_fIRQ && m_fEnableCTC);
   return m_bStatus;
 }
 
@@ -171,6 +173,7 @@ void CCDP1878::DevWrite (address_t nPort, uint8_t bData)
   // Write to a counter/timer register ...
   //--
   assert((nPort > 1) && (nPort <= 7));
+  if (!m_fEnableCTC) return;
   switch (nPort) {
     case COUNTER_A_MSB:  LoadMSB(m_TimerA, bData);      break;
     case COUNTER_A_LSB:  LoadLSB(m_TimerA, bData);      break;
@@ -192,6 +195,7 @@ uint8_t CCDP1878::DevRead (address_t nPort)
   // only one status register and both addresses access the same thing.
   //--
   assert((nPort > 1) && (nPort <= 7));
+  if (!m_fEnableCTC) return 0xFF;
   switch (nPort) {
     case STATUS_A:
     case STATUS_B:        return ReadStatus();
@@ -213,6 +217,7 @@ uint1_t CCDP1878::GetSense (address_t nSense, uint1_t bDefault)
   // that the former two are not affected by the interrupt enable flag!
   //--
   UpdateStatus();  
+  if (!m_fEnableCTC) return bDefault;
   if (nSense == m_nSenseInt)
     return m_fIRQ ? 1 : 0;
   else if (nSense == m_nSenseA)
@@ -229,7 +234,11 @@ void CCDP1878::ShowDevice (ostringstream &ofs) const
   //   This routine will dump the state of the internal PPI registers.
   // It's used for debugging by the user interface SHOW DEVICE command.
   //--
-  m_TimerA.Show(ofs);
-  ofs << std::endl;
-  m_TimerB.Show(ofs);
+  if (!m_fEnableCTC) {
+    ofs << FormatString("CTC DISABLED") << std::endl;
+  } else {
+    m_TimerA.Show(ofs);
+    ofs << std::endl;
+    m_TimerB.Show(ofs);
+  }
 }
