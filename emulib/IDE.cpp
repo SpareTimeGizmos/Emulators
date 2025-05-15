@@ -113,6 +113,8 @@
 //                  C/H/S addressing is no longer allowed and will cause an error
 // 16-DEC-23  RLA   Set the model name (for IDENTIFY DEVICE) to the file name
 // 19-FEB-25  RLA   Invalid commands (e.g. $00) never clear the BUSY bit!
+// 16-APR-25  RLA   READY should be set during data transfers!
+//                  Fill in some more IDENTIFY DEVICE geometry information.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -350,14 +352,13 @@ void CIDE::StartTransfer (uint8_t nUnit, bool fRead)
 {
   //++
   //   This will start programmed I/O data transfer.  It sets the data request
-  // flag in the status and clears the drive busy flag.  It's not clear to me
-  // whether READY should be set or remain cleared during the transfer, so for
-  // now we'll just leave it alone.  The byte count is initialized to 512 and
-  // the transfer direction is set by the fRead parameter (true = disk -> CPU,
-  // and false = CPU -> disk).  If interrupts are enabled, then this will also
-  // request an interrupt when reading (but not when writing!).
+  // flag and the READY flag in the status and clears the drive busy flag.  The
+  // byte count is initialized to 512 and the transfer direction is set by the
+  // fRead parameter (true = disk -> CPU, and false = CPU -> disk).  If interrupts
+  // are enabled, then this will also request an interrupt when reading (but not
+  // when writing!).
   //--
-  SETBIT(m_abStatus[nUnit], STS_DRQ);
+  SETBIT(m_abStatus[nUnit], STS_DRQ|STS_READY);
   CLRBIT(m_abStatus[nUnit], STS_BUSY);
   m_cbTransfer = SECTOR_SIZE;
   if (!fRead) memset(m_abBuffer, 0, sizeof(m_abBuffer));
@@ -576,9 +577,11 @@ void CIDE::IdentifyDevice (uint8_t nUnit)
   //--
   memset(m_abBuffer, 0, sizeof(m_abBuffer));
   IDENTIFY_DEVICE_DATA *pIDD = (IDENTIFY_DEVICE_DATA *) &m_abBuffer;
+  assert(sizeof(IDENTIFY_DEVICE_DATA) == SECTOR_SIZE);
 
-  //   Note that the strings are always space filled and NOT zero terminated
-  // (as you might expect from a C string).
+  //   Set the drive serial number, drive firmware version number, and
+  // manufacturer's model number.  Note that the strings are always space
+  // filled and NOT zero terminated (as you might expect from a C string).
   //
   //                                0000000000111111111122222222223333333333
   //                                0123456789012345678901234567890123456789
@@ -586,14 +589,19 @@ void CIDE::IdentifyDevice (uint8_t nUnit)
   memcpy(pIDD->abFirmwareRevision, "V0.0.0  ", 8);
   memcpy(pIDD->abModelNumber, m_apszModelName[nUnit], MODELLEN);
 
-  // Other interesting data ...
+  //   Other interesting data ...   Note that we arbitrarily define the
+  // geometry as 16 heads and 256 sectors per track, and then let the total
+  // number of tracks be whatever we need to match the drive capacity.  These
+  // are all made up numbers of course, but some software requires these fields
+  // to be non-zero!
+  uint32_t lCapacity = m_apImages[m_nSelectedUnit]->GetCapacity();
   pIDD->wGeneralConfiguration = IDD_FIXED_DEVICE;
-  //pIDD->wNumberOfCylinders = NUMBER_OF_CYLINDERS;
-  //pIDD->wNumberOfHeads = HEADS_PER_CYLINDER;
-  //pIDD->wSectorsPerTrack = SECTORS_PER_TRACK;
+  pIDD->wSectorsPerTrack = pIDD->wCurrentSectorsPerTrack = 256;
+  pIDD->wNumberOfHeads = pIDD->wNumberOfCurrentHeads = 16;
+  pIDD->wNumberOfCylinders = pIDD->wNumberOfCurrentCylinders = lCapacity/16/256;
   pIDD->wBufferSize = 1;
   pIDD->wCapabilities = IDD_LBA_SUPPORTED;
-  pIDD->lUserAddressableSectors = m_apImages[m_nSelectedUnit]->GetCapacity();
+  pIDD->lUserAddressableSectors = pIDD->lCurrentCapacity = lCapacity;
 
   // Schedule a DRQ soon and we're done here...
   ScheduleEvent(EVENT_READ_0+m_nSelectedUnit, m_llShortDelay);
@@ -632,7 +640,7 @@ void CIDE::DoCommand (uint8_t bCommand)
   }
   ClearError(m_nSelectedUnit);
   DriveBusy(m_nSelectedUnit);
-  LOGF(TRACE, "IDE unit %d command 0x%02X", m_nSelectedUnit, bCommand);
+  LOGF(DEBUG, "IDE unit %d command 0x%02X", m_nSelectedUnit, bCommand);
   switch ((m_bLastCommand = bCommand)) {
     case CMD_FEATURES:      SetFeatures();                    break;
     case CMD_IDENTIFY:      IdentifyDevice(m_nSelectedUnit);  break;

@@ -41,7 +41,7 @@ EMULIB  = ../emulib
 
 # Define the target (library) and source files required ...
 CPPSRCS   = SBC1802.cpp MemoryMap.cpp TwoPSGs.cpp \
-	    Baud.cpp POST.cpp UserInterface.cpp \
+	    Printer.cpp Baud.cpp POST.cpp UserInterface.cpp \
             $(EMULIB)/LogFile.cpp $(EMULIB)/CommandParser.cpp \
 	    $(EMULIB)/CommandLine.cpp $(EMULIB)/TLIO.cpp \
 	    $(EMULIB)/StandardUI.cpp $(EMULIB)/EMULIB.cpp \

@@ -48,6 +48,7 @@
 //  
 // REVISION HISTORY:
 // 26-MAR-25  RLA   New file.
+// 12-MAY-25  RLA   <LF> should output both <CR> and <LF>.  <CR> is ignored.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -111,10 +112,13 @@ void CPrinter::Print (uint8_t ch)
 {
   //++
   //   Write a character to the printer file, handling line wrap around at the
-  // right margin.  If the character is either a <CR> or an <LF> then start
-  // a new line.
+  // right margin.  If the character is carriage return <CR> then just ignore
+  // it, and if the character is a line feed <LF> then start a new line by
+  // printing both a <CR> and a <LF>.  This is the way MicroDOS wants it.
   //--
-  if ((ch == CR) || (ch == LF)) {
+  if (ch == CR) {
+    // just ignore it for now ...
+  } else if (ch == LF) {
     NewLine(/*IsAutoLF()*/);
   } else {
     ++m_lCurrentColumn;
@@ -130,7 +134,7 @@ uint8_t CPrinter::UpdateStatus()
   // ACK and BUSY signals too (which are wired to the PPI handshaking pins).
   //--
   m_bCurrentStatus &= ~STS_MASK_READ;
-  if (IsSelectOut()) SETBIT(m_bCurrentStatus, STS_SELECT_IN);
+  if (IsAttached() && IsSelectOut()) SETBIT(m_bCurrentStatus, STS_SELECT_IN);
   if (!IsAttached()) SETBIT(m_bCurrentStatus, STS_PAPER_OUT);
   SETBIT(m_bCurrentStatus, STS_ERROR);
   UpdateStrobeA(IsAcknowledge());
@@ -164,6 +168,9 @@ void CPrinter::SetStrobe (bool fSet)
   // active state!
   //--
 
+  // If there is no printer attached, then this does nothing ...
+  if (!IsAttached()) return;
+
   // Look for the trailing edge of the STROBE pulse ...
   if (IsStrobe() && !fSet) {
     if (IsBusy())
@@ -172,7 +179,7 @@ void CPrinter::SetStrobe (bool fSet)
     LOGF(DEBUG, "printer prints 0x%02X", m_bDataBuffer);
   }
 
-  // Remember the last statte of STROBE ...
+  // Remember the last state of STROBE ...
   if (fSet)
     SETBIT(m_bLastControl, CTL_STROBE);
   else

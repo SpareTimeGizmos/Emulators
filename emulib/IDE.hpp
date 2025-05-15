@@ -78,7 +78,7 @@ public:
     STS_SEEK_DONE   = 0x10,   // device seek complete
     STS_DRQ         = 0x08,   // data request
     STS_COR         = 0x04,   // corrected data flag
-    STS_ERROR       = 0x01,   // error detected
+    STS_ERROR       = 0x01,   // error detectedv
     // Device control register bits ...
     CTL_SRST        = 0x04,   // software reset
     CTL_nIEN        = 0x02,   // interrupt enable (active low!)
@@ -114,38 +114,38 @@ public:
 public:
 #pragma pack(push,1)
   struct _IDENTIFY_DEVICE_DATA {
-    uint16_t wGeneralConfiguration;       // IDD_FIXED_DEVICE
-    uint16_t wNumberOfCylinders;          //
-    uint16_t wSpecificConfiguration;      //
-    uint16_t wNumberOfHeads;              //
-    uint16_t wUnformattedBytesPerTrack;   //
-    uint16_t wUnformattedBytesPerSector;  //
-    uint16_t wSectorsPerTrack;            //
-    uint16_t awATAreserved7[3];           //
-    uint8_t  abSerialNumber[20];          //
-    uint16_t wBufferType;                 //
-    uint16_t wBufferSize;                 //
-    uint16_t wECCbytes;                   //
-    uint8_t  abFirmwareRevision[8];       //
-    uint8_t  abModelNumber[40];           //
-    uint16_t wReadWriteMultiple;          //
-    uint16_t wTrustedComputing;           //
-    uint16_t wCapabilities;               // IDD_LBA_SUPPORTED
-    uint16_t wATAreserved50;              //
-    uint16_t wPIOtimingMode;              //
-    uint16_t wDMAtimingMode;              //
-    uint16_t wATAreserved53;              //
-    uint16_t wNumberOfCurrentCylinders;   //
-    uint16_t wNumberOfCurrentHeads;       //
-    uint16_t wCurrentSectorsPerTrack;     //
-    uint32_t lCurrentCapacity;            //
-    uint16_t wATAreserved59;              //
-    uint32_t lUserAddressableSectors;     //
-    uint16_t wSingleWordDMA;              //
-    uint16_t wMultiWordDMA;               //
-    uint16_t awATAreserved64[64];         //
-    uint16_t awVendorReserved[32];        //
-    uint16_t awATAreserved160[96];        //
+    uint16_t wGeneralConfiguration;       //   1 - IDD_FIXED_DEVICE
+    uint16_t wNumberOfCylinders;          //   2 -
+    uint16_t wSpecificConfiguration;      //   3 -
+    uint16_t wNumberOfHeads;              //   4 -
+    uint16_t wUnformattedBytesPerTrack;   //   5 -
+    uint16_t wUnformattedBytesPerSector;  //   6 -
+    uint16_t wSectorsPerTrack;            //   7 -
+    uint16_t awATAreserved7[3];           //   8 -
+    uint8_t  abSerialNumber[20];          //  10 -
+    uint16_t wBufferType;                 //  20 -
+    uint16_t wBufferSize;                 //  21 -
+    uint16_t wECCbytes;                   //  22 -
+    uint8_t  abFirmwareRevision[8];       //  23 -
+    uint8_t  abModelNumber[40];           //  27 -
+    uint16_t wReadWriteMultiple;          //  47 -
+    uint16_t wTrustedComputing;           //  48 -
+    uint16_t wCapabilities;               //  49 - IDD_LBA_SUPPORTED
+    uint16_t wATAreserved50;              //  50 -
+    uint16_t wPIOtimingMode;              //  51 -
+    uint16_t wDMAtimingMode;              //  52 -
+    uint16_t wATAreserved53;              //  53 -
+    uint16_t wNumberOfCurrentCylinders;   //  54 -
+    uint16_t wNumberOfCurrentHeads;       //  55 -
+    uint16_t wCurrentSectorsPerTrack;     //  56 -
+    uint32_t lCurrentCapacity;            //  57 -
+    uint16_t wATAreserved59;              //  59 -
+    uint32_t lUserAddressableSectors;     //  60 -
+    uint16_t wSingleWordDMA;              //  62 - 
+    uint16_t wMultiWordDMA;               //  63 -
+    uint16_t awATAreserved64[64];         //  64 -
+    uint16_t awVendorReserved[32];        //  
+    uint16_t awATAreserved160[96];        //  80 -
   };
 #pragma pack(pop)
   typedef struct _IDENTIFY_DEVICE_DATA IDENTIFY_DEVICE_DATA;
