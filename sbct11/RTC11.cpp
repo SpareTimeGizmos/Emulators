@@ -51,6 +51,7 @@
 // 
 // REVISION HISTORY:
 // 11-JUL-22  RLA   New file.
+// 15-AUG-25  RLA   Ignore writes to the high (odd) byte on the new PCB!
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -130,8 +131,11 @@ uint8_t CRTC11::ReadByte (bool fOdd)
       return LOBYTE(m_wCache);
     } else
       return HIBYTE (m_wCache);
-  } else
-    return m_p12887->DevRead(m_bAddress);
+  } else {
+    uint8_t bData = fOdd ? 0xFF : m_p12887->DevRead(m_bAddress);
+    LOGF(DEBUG, "RTC read address=%d, data=0x%02X, odd=%d", m_bAddress, bData, fOdd);
+    return bData;
+  }
 }
 
 void CRTC11::WriteByte (uint8_t bData, bool fOdd)
@@ -151,8 +155,10 @@ void CRTC11::WriteByte (uint8_t bData, bool fOdd)
       m_wCache = MKWORD(bData, LOBYTE(m_wCache));
       m_p12887->DevWrite(m_bAddress, LOBYTE(m_wCache>>1));
     }
-  } else
-    m_p12887->DevWrite(m_bAddress, bData);
+  } else {
+    LOGF(DEBUG,"RTC write address=%d, data=0x%02X, odd=%d", m_bAddress, bData, fOdd);
+    if (!fOdd) m_p12887->DevWrite(m_bAddress, bData);
+  }
 }
 
 uint8_t CRTC11::DevRead (address_t nPort)
