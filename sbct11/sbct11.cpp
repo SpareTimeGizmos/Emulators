@@ -25,6 +25,7 @@
 // REVISION HISTORY:
 //  4-MAR-20  RLA   New file.
 // 30-AUG-22  RLA   Delete objects in the reverse order of creation!
+// 15-AUG-25  RLA   Change RTC to the "new PCB" version.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -152,7 +153,7 @@ int main (int argc, char *argv[])
   g_pSLU0 = DBGNEW CDC319("SLU0", SLU0_BASE, g_pEvents, g_pConsole, g_pCPU);
   g_pIOpage->Install(g_pSLU0);
   g_pSLU0->AttachInterrupt((*g_pPIC)[SLU0_XMT_IRQ], (*g_pPIC)[SLU0_RCV_IRQ]);
-  g_pRTC = DBGNEW CRTC11(RTC_BASE, g_pEvents, true);
+  g_pRTC = DBGNEW CRTC11(RTC_BASE, g_pEvents);
   g_pIOpage->Install(g_pRTC);
   g_pPPI = DBGNEW CPPI11("PPI", PPI_BASE, g_pEvents);
   g_pIOpage->Install(g_pPPI);
