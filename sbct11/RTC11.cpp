@@ -124,6 +124,10 @@ uint8_t CRTC11::ReadByte (bool fOdd)
   // read the NVR twice"?  Well, some of the registers have side effects when
   // read, and some of the registers can change over time.  Remember, this
   // chip is a clock, after all!
+  //
+  //   And all of that is only true for the old PCBs.  The new PCBs map the
+  // DS12887 correctly as a byte wide device connected only to the low DAL
+  // bits.  Reading the odd (upper) byte returns junk.
   //--
   if (m_fOldPCB) {
     if (!fOdd) {
@@ -132,9 +136,14 @@ uint8_t CRTC11::ReadByte (bool fOdd)
     } else
       return HIBYTE (m_wCache);
   } else {
-    uint8_t bData = fOdd ? 0xFF : m_p12887->DevRead(m_bAddress);
-    LOGF(DEBUG, "RTC read address=%d, data=0x%02X, odd=%d", m_bAddress, bData, fOdd);
-    return bData;
+    if (fOdd) {
+      LOGF(WARNING, "Attempt to read the odd RTC byte");
+      return 0xFF;
+    } else {
+      uint8_t bData = m_p12887->DevRead(m_bAddress);
+      LOGF(DEBUG, "RTC read address=%d, data=0x%02X", m_bAddress, bData);
+      return bData;
+    }
   }
 }
 
@@ -147,6 +156,10 @@ void CRTC11::WriteByte (uint8_t bData, bool fOdd)
   // low (even addressed) byte first, so we have to cache that.  Then, only
   // when the high byte is written, can we actually write to the NVR.  This
   // system isn't foolproof, but it's good enough to fool the SBCT11 firmware.
+  // 
+  //   And again, as with ReadByte(), that's only true for the old PCBs.  The
+  // revision C and later PCBs correctly map the DS12887 to the low DAL byte
+  // only.  Writing to the upper (odd) byte does nothing.
   //--
   if (m_fOldPCB) {
     if (!fOdd)
@@ -156,8 +169,12 @@ void CRTC11::WriteByte (uint8_t bData, bool fOdd)
       m_p12887->DevWrite(m_bAddress, LOBYTE(m_wCache>>1));
     }
   } else {
-    LOGF(DEBUG,"RTC write address=%d, data=0x%02X, odd=%d", m_bAddress, bData, fOdd);
-    if (!fOdd) m_p12887->DevWrite(m_bAddress, bData);
+    if (fOdd) {
+      LOGF(WARNING, "Attempt to write the odd RTC byte");
+    } else {
+      LOGF(DEBUG, "RTC write address=%d, data=0x%02X", m_bAddress, bData);
+      m_p12887->DevWrite(m_bAddress, bData);
+    }
   }
 }
 
