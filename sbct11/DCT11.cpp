@@ -1104,7 +1104,11 @@ uint32_t CDCT11::MTPS (uint8_t bDSTmode, uint8_t bDSTreg)
   //--
   FETCH_SINGLE_OPERAND_BYTE(bDST);
   uint8_t bOldBits = PSW & (PSW_T);
+  uint8_t bOldPrio = (PSW & PSW_PRIO) >> 5;
   PSW = (bDST & (PSW_N | PSW_Z | PSW_V | PSW_C | PSW_PRIO)) | bOldBits;
+  uint8_t bNewPrio = (PSW & PSW_PRIO) >> 5;
+  if (bOldPrio != bNewPrio)
+    LOGF(DEBUG, "CPU priority changed from BR%d to BR%d", bOldPrio, bNewPrio);
   // TBA NYI TODO - RECALCULATE INTERRUPTS NOW THAT PRIO IS CHANGED?!?
   return nCycles + 8;
 }
@@ -1313,6 +1317,7 @@ uint32_t CDCT11::TrapNow (uint16_t wNewPC, uint16_t wNewPSW)
   // don't trap at the end of this instruction!!
   //--
   PUSHB(PSW);  PUSHW(PC);  PC = wNewPC;  PSW = MASK8(wNewPSW);
+  LOGF(DEBUG, "TrapNow() new PC=%06o, new prio=BR%d", wNewPC, (wNewPSW & PSW_PRIO) >> 5);
   if (!ISSET(PSW, PSW_T)) CLRBIT(m_bRequests, REQ_TRACE);
   return 16;
 }
@@ -1538,17 +1543,17 @@ uint32_t CDCT11::DoRequests (CPIC11::IRQ_t nIRQ)
     address_t wVector = GetPIC()->GetVector(nIRQ);
     nCycles += TrapNow(wVector);
     GetPIC()->AcknowledgeRequest(nIRQ);
-    LOGF(TRACE, "interrupt CP%d, vector=%03o", nIRQ, wVector);
+    LOGF(DEBUG, "external interrupt CP%d, vector=%03o", nIRQ, wVector);
   }
   if (ISSET(m_bRequests, REQ_POWERFAIL)) {
-    LOGF(TRACE, "POWERFAIL trap");
+    LOGF(DEBUG, "POWERFAIL trap");
     nCycles += TrapNow(VEC_POWERFAIL);
   }
   if (ISSET(m_bRequests, REQ_TRACE))
     nCycles += TrapNow(VEC_BPT);
   if (ISSET(m_bRequests, REQ_HALT)) {
     address_t wVector = GetRestartAddress();
-    LOGF(TRACE, "HALT restart trap to %06o", wVector);
+    LOGF(DEBUG, "HALT restart trap to %06o", wVector);
     nCycles += TrapNow(wVector, PSW_PRI7);
   }
   m_bRequests = 0;

@@ -61,11 +61,22 @@ public:
     XMIT_READY    = 0000200,  // transmitter ready to send another byte
     XMIT_IE       = 0000100,  // transmitter interrupt enable
     XMIT_PBR      = 0000070,  // programmable baud rate
+     XMIT_PBR_300  = 0000000, //  ...  300 baud
+     XMIT_PBR_600  = 0000010, //  ...  600 baud
+     XMIT_PBR_1200 = 0000020, //  ... 1200 baud
+     XMIT_PBR_2400 = 0000030, //  ... 2400 baud
+     XMIT_PBR_4800 = 0000040, //  ... 4800 baud
+     XMIT_PBR_9600 = 0000050, //  ... 9600 baud
+     XMIT_PBR_19200= 0000060, //  ...19200 baud
+     XMIT_PBR_38400= 0000070, //  ...38400 baud
     XMIT_MAINT    = 0000004,  // maintenance (loopback) mode
     XMIT_PBRE     = 0000002,  // programmable baud rate enable
     XMIT_BREAK    = 0000001,  // transmit break
     // Transmitter buffer (TBUF) bits ...
     TBUF_DATA     = 0000377,  // transmitted data
+    // Other magic constants ...
+    STANDARD_BAUD_RATES = 8,  // number of standard baud rates ...
+    BITS_PER_CHARACTER  = 10, // the DC319 is fixed at 8N1 format!
   };
 
   // Constructor and destructor ...
@@ -100,8 +111,23 @@ public:
   virtual void RequestTxInterrupt (bool fInterrupt=true) {RequestInterruptA(fInterrupt);}
   virtual void RequestRxInterrupt (bool fInterrupt=true) {RequestInterruptB(fInterrupt);}
 
+  // Public methods ...
+public:
+  // Set the DC319 internal baud rate generator ...
+  bool SetBaud (uint32_t lTxBaud, uint32_t lRxBaud);
+  // Set or clear the programmable baud rate inhibit input ...
+  void SetPBRI (bool fPBRI=true);
+  // Enable or disable this DC319 chip ...
+  void Enable (bool fEnable=true) {m_fEnabled = fEnable;}
+  bool IsEnabled() const {return m_fEnabled;}
+
   // Private methods ...
 private:
+  // Update the baud rate whenever it's changed ...
+  void UpdateBaud (uint32_t lTxBaud, uint32_t lRxBaud);
+  void UpdatePBR (uint8_t bNew);
+  // Extract the baud rate select bits from the TxCSR ...
+  uint8_t GetPBR(uint16_t wCSR) const  {return (wCSR & XMIT_PBR) >> 3;}
   // Read the receiver buffer (it's read only!)
   uint8_t ReadRxBuf ();
   // Read or write the receiver control/status register ...
@@ -120,4 +146,11 @@ protected:
   uint16_t  m_wRxBuf;   // receiver buffer register
   uint16_t  m_wTxCSR;   // transmitter control and status register
   uint16_t  m_wTxBuf;   // transmitter buffer register
+  // Other local data ...
+  uint32_t  m_lTxBaud;  // "hardware" transmit baud rate
+  uint32_t  m_lRxBaud;  //    "   "   receive    "   "
+  bool      m_fPBRI;    // programmable baud rate inhibit input
+  bool      m_fEnabled; // TRUE if this DC319 is enabled
+  // Standard DC319 baud rates ...
+  static uint32_t m_alStandardBauds[STANDARD_BAUD_RATES];
 };

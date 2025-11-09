@@ -21,6 +21,7 @@
 //
 // REVISION HISTORY:
 // 11-JUL-22  RLA   New file.
+// 16-SEP-25  RLA   Add m_fEnable to allow the chip to be "uninstalled".
 //--
 #pragma once
 #include <stdint.h>             // uint8_t, int32_t, and much more ...
@@ -62,6 +63,9 @@ public:
   // Get or set the new vs old PCB emulation ...
   bool IsOldPCB() const {return m_fOldPCB;}
   void SetOldPCB (bool fOldPCB=true) {m_fOldPCB = fOldPCB;}
+  // Enable or disable the RTC chip ...
+  void Enable (bool fEnable=true) {m_fEnabled = fEnable;}
+  bool IsEnabled() const {return m_fEnabled;}
 
   // Device methods from CDevice ...
 public:
@@ -81,4 +85,5 @@ protected:
   C12887   *m_p12887;     // this does all the real work!
   bool      m_fOldPCB;    // TRUE if we're emulating the old PCB revision
   uint16_t  m_wCache;     // high/low byte cache for read/write for old PCBs
+  bool      m_fEnabled;   // TRUE if the DS12887 chip is installed
 };

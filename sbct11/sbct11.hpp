@@ -28,7 +28,7 @@
 
 // Program name and version ...
 #define PROGRAM      "T11"    // used in prompts and error messages 
-#define T11VER           3    // version number of this release
+#define T11VER           4    // version number of this release
 
 // SBCT11 memory configuration ...
 #define RAMSIZE     65536UL   // number of bytes in RAM

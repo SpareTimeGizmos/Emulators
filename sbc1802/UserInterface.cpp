@@ -45,13 +45,12 @@
 //      /CAPACITY=nnnnn         - set tape capacity, IN BLOCKS!
 //      /READ                   - make tape unit read only
 //      /WRITE                  - allow writing to this unit
+//   DET*ACH TA*PE              - detach TU58 drive
+//      /UNIT=0|1               - tape drive unit, 0 or 1
 // 
 //   ATT*ACH PRI*NTER filename  - attach parallel port printer to text file
 //      /[NO]WID*TH=nn          - set printer width for line wrap
 //   DET*ACH PRI*NTER           - detach printer
-//
-//   DET*ACH TA*PE              - detach TU58 drive
-//      /UNIT=0|1               - tape drive unit, 0 or 1
 //
 //   E*XAMINE xxxx              - display just address xxxx (hex)
 //      xxxx-xxxx               - display all addresses in the range
@@ -409,7 +408,7 @@ CCmdVerb CUI::m_cmdShowCPU("CPU", &DoShowCPU);
 CCmdVerb CUI::m_cmdClearMemory("MEM*ORY", &DoClearMemory, NULL, m_modsRAMROM);
 CCmdVerb CUI::m_cmdShowMemory("MEM*ORY", &DoShowMemory);
 
-// CLEAR and SHOW DEVICE ...
+// SET, CLEAR and SHOW DEVICE ...
 CCmdArgument * const CUI::m_argsShowDevice[] = {&m_argOptDeviceName, NULL};
 CCmdArgument * const CUI::m_argsSetDevice[] = {&m_argDeviceName, NULL};
 CCmdModifier * const CUI::m_modsSetDevice[] = {

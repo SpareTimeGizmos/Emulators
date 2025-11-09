@@ -60,8 +60,12 @@ public:
 //virtual void ClearDevice() override {CIDE::ClearDevice();}
   virtual word_t DevRead (address_t nAddress) override;
   virtual void DevWrite (address_t nAddress, word_t bData) override;
-//virtual void ShowDevice (ostringstream &ofs) const override {CIDE::ShowDevice(ofs);}
+  virtual void ShowDevice (ostringstream& ofs) const override;
+  // Enable or disable the IDE11 interface ...
+  void Enable (bool fEnable=true) {m_fEnabled = fEnable;}
+  bool IsEnabled() const {return m_fEnabled;}
 
   // Private member data...
 protected:
+  bool      m_fEnabled;   // TRUE if the IDE interface is installed
 };

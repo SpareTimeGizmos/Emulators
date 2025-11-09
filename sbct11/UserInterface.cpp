@@ -128,6 +128,14 @@
 //   CL*EAR DEV*ICE name        - reset just device <name>
 //   CL*EAR DEV*ICES            - reset all I/O devices only
 // 
+//   SE*T DEV*ICE name          - set device parameters
+//      /BAUD=nnnn              - set SLU baud rate
+//      /[NO]PBRI               - SLU programmable baud rate inhibit
+//      /SHO*RT=nnnn            - set IDE short delay, in microseconds
+//      /LO*NG=nnnn             -  "   "  long    "    "    "    "
+//      /ENABLE                 - enable RTC, TU58 or SLU1
+//      /DISABLE                - disable "  "   "
+//
 //   SH*OW DI*SK                - show IDE disk status and parameters
 //   SH*OW TA*PE                -  "   TU58 tape   "    "   "    "
 //
@@ -201,6 +209,8 @@
 // 21-JUL-22  RLA   Make STEP disassemble from the correct RAM/ROM space
 // 28-JUL-22  RLA   FindDevice() doesn't work for SET DEVICE ...
 // 17-DEC-23  RLA   Add SEND and RECEIVE commands
+// 16-SEP-25  RLA   Add SET DEVICE commands
+// 23-SEP-25  RLA   Add split baud rates for SLU1.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -286,11 +296,17 @@ CCmdArgNumber      CUI::m_argBreakChar("break character", 10, 1, 31);
 CCmdArgNumber      CUI::m_argBaseAddress("starting address", 8, 0, ADDRESS_MAX);
 CCmdArgNumber      CUI::m_argByteCount("byte count", 10, 0, ADDRESS_MAX);
 CCmdArgNumber      CUI::m_argCPUmode("CPU mode", 8, 0, 0177777);
+CCmdArgName        CUI::m_argDeviceName("device", false);
 CCmdArgName        CUI::m_argOptDeviceName("device", true);
 CCmdArgNumber      CUI::m_argUnit("unit", 10, 0, 255);
 CCmdArgNumber      CUI::m_argCapacity("capacity", 10, 1, UINT32_MAX);
 CCmdArgNumber      CUI::m_argDelay("delay (ms)", 10, 1, 1000000UL);
 CCmdArgList        CUI::m_argDelayList("delay list", m_argDelay, true);
+CCmdArgNumber      CUI::m_argBaud("baud rate", 10, 1, 1000000UL);
+CCmdArgNumber      CUI::m_argTxBaud("transmit baud rate", 10, 1, 1000000UL);
+CCmdArgNumber      CUI::m_argRxBaud("receive baud rate", 10, 1, 1000000UL);
+CCmdArgNumber      CUI::m_argShortDelay("short delay (us)", 10, 1, 1000000UL);
+CCmdArgNumber      CUI::m_argLongDelay("long delay (us)", 10, 1, 1000000UL);
 
 // Modifier definitions ...
 //   Like command arguments, modifiers may be shared by several commands...-
@@ -314,6 +330,13 @@ CCmdModifier CUI::m_modXModem("X*MODEM", NULL);
 CCmdModifier CUI::m_modAppend("APP*END", "OVER*WRITE");
 CCmdModifier CUI::m_modCRLF("CRLF", "NOCRLF");
 CCmdModifier CUI::m_modDelayList("DEL*AY", NULL, &m_argDelayList);
+CCmdModifier CUI::m_modBaud("BAU*D", NULL, &m_argBaud);
+CCmdModifier CUI::m_modTxBaud("TXB*AUD", NULL, &m_argTxBaud);
+CCmdModifier CUI::m_modRxBaud("RXB*AUD", NULL, &m_argRxBaud);
+CCmdModifier CUI::m_modShortDelay("SHO*RT", NULL, &m_argShortDelay);
+CCmdModifier CUI::m_modLongDelay("LO*NG", NULL, &m_argLongDelay);
+CCmdModifier CUI::m_modEnable("ENA*BLED", "DISA*BLED");
+CCmdModifier CUI::m_modPBRI("PBRI", "NOPBRI");
 
 // LOAD and SAVE commands ...
 CCmdArgument * const CUI::m_argsLoadSave[] = {&m_argFileName, NULL};
@@ -376,10 +399,17 @@ CCmdVerb CUI::m_cmdShowCPU("CPU", &DoShowCPU);
 CCmdVerb CUI::m_cmdClearMemory("MEM*ORY", &DoClearMemory, NULL, m_modsRAMROM);
 CCmdVerb CUI::m_cmdShowMemory("MEM*ORY", &DoShowMemory);
 
-// CLEAR and SHOW DEVICE ...
+// SET, CLEAR and SHOW DEVICE ...
 CCmdArgument * const CUI::m_argsShowDevice[] = {&m_argOptDeviceName, NULL};
 CCmdVerb CUI::m_cmdShowDevice("DEV*ICES", &DoShowDevice, m_argsShowDevice, NULL);
 CCmdVerb CUI::m_cmdClearDevice("DEV*ICES", &DoClearDevice, m_argsShowDevice, NULL);
+CCmdArgument * const CUI::m_argsSetDevice[] = {&m_argDeviceName, NULL};
+CCmdModifier * const CUI::m_modsSetDevice[] = {
+    &m_modBaud, &m_modTxBaud, &m_modRxBaud, &m_modPBRI, &m_modEnable,
+    &m_modShortDelay, &m_modLongDelay, 
+    NULL
+  };
+CCmdVerb CUI::m_cmdSetDevice("DEV*ICE", &DoSetDevice, m_argsSetDevice, m_modsSetDevice);
 
 // CLEAR verb definition ...
 CCmdVerb * const CUI::g_aClearVerbs[] = {
@@ -389,7 +419,7 @@ CCmdVerb CUI::m_cmdClear("CL*EAR", NULL, NULL, NULL, g_aClearVerbs);
 
 // SET verb definition ...
 CCmdVerb * const CUI::g_aSetVerbs[] = {
-    &m_cmdSetBreakpoint, &m_cmdSetCPU,
+    &m_cmdSetBreakpoint, &m_cmdSetCPU, &m_cmdSetDevice,
     &CStandardUI::m_cmdSetLog, &CStandardUI::m_cmdSetWindow,
 #ifdef THREADS
     &CStandardUI::m_cmdSetCheckpoint,
@@ -1577,7 +1607,7 @@ CDevice *CUI::FindDevice (const string sDevice)
   return NULL;
 }
 
-void CUI::ShowOneDevice (bool fHeading, const CDevice *pDevice)
+void CUI::ShowOneDevice (const CDevice *pDevice, bool fHeading)
 {
   //++
   //   Show the short description (name, type, description, address and vector)
@@ -1626,16 +1656,28 @@ bool CUI::ShowAllDevices()
   // assigned to that device, and keep scanning.  Yes, it's a kludge, but it
   // works!
   //--
+#ifdef UNUSED
   bool fHeading = true;
   address_t nAddress = IOPAGE;
   while (nAddress < 0177776) {
     const CDevice *pDevice = g_pIOpage->Find(nAddress);
     if (pDevice != NULL) {
-      ShowOneDevice(fHeading, pDevice);
+      ShowOneDevice(pDevice, fHeading);
       fHeading = false;  nAddress += pDevice->GetPortCount();
     } else
       nAddress += 2;
   }
+#endif
+  //   The above code was nice while it lasted, but now that some devices
+  // (like the RTC, SLU1 and IDE) can be disabled we've switched to a more
+  // brute force approach ...
+  ShowOneDevice(g_pMCR, true);
+  ShowOneDevice(g_pSLU0);
+  if ((g_pSLU1 != NULL) && g_pSLU1->IsEnabled()) ShowOneDevice(g_pSLU1);
+  ShowOneDevice(g_pLTC);
+  ShowOneDevice(g_pPPI);
+  if ((g_pRTC != NULL) && g_pRTC->IsEnabled()) ShowOneDevice(g_pRTC);
+  if ((g_pIDE != NULL) && g_pIDE->IsEnabled()) ShowOneDevice(g_pIDE);
   CMDOUTS("");  return true;
 }
 
@@ -1653,7 +1695,7 @@ bool CUI::DoShowDevice (CCmdParser &cmd)
   if (!m_argOptDeviceName.IsPresent()) return ShowAllDevices();
   CDevice *pDevice = FindDevice(m_argOptDeviceName.GetValue());
   if (pDevice == NULL) return false;
-  ShowOneDevice(true, pDevice);
+  ShowOneDevice(pDevice, true);
   ostringstream ofs;
   pDevice->ShowDevice(ofs);
   CMDOUTS("");  CMDOUT(ofs);  CMDOUTS("");
@@ -1700,6 +1742,75 @@ bool CUI::DoShowTape (CCmdParser &cmd)
   return true;
 }
 
+bool CUI::DoSetDevice (CCmdParser &cmd)
+{
+  //++
+  //   The SET DEVICE ... command can set various device parameters - delays
+  // for the IDE drive, baud rate for the serial ports, etc.  This code is not
+  // very smart in that it silently ignores any options which don't apply
+  // to the selected device.
+  //--
+  string sDevice = m_argDeviceName.GetValue();
+
+  // The TU58 is a special case because it's not a CDevice derived class!
+  if (CCmdArgKeyword::Match(sDevice, "TAPE")) {
+    if (m_modEnable.IsPresent()) g_pTU58->Enable(!m_modEnable.IsNegated());
+    return true;
+  }
+
+  // Search for the corresponding CDevice object ...
+  CDevice *pDevice = FindDevice(sDevice);
+  if (pDevice == NULL) return false;
+
+  // Apply the device specific options ...
+  if (pDevice == g_pSLU0) {
+    if (m_modPBRI.IsPresent()) g_pSLU0->SetPBRI(!m_modPBRI.IsNegated());
+    //   Note that SLU0 doesn't support separate TX and RX baud rates, only
+    // a single /BAUD modifier.  It's an error to specify /TXBAUD or /RXBAUD.
+    if (m_modTxBaud.IsPresent() || m_modRxBaud.IsPresent()) {
+      CMDERRS("SLU0 does not support split baud rates");  return false;
+    }
+    if (m_modBaud.IsPresent()) {
+      uint32_t lBaud = m_argBaud.GetNumber();
+      if (!g_pSLU0->SetBaud(lBaud, lBaud)) {
+        CMDERRS("Invalid baud rate " << lBaud);  return false;
+      }
+    }
+  } else if (pDevice == g_pSLU1) {
+    if (m_modPBRI.IsPresent()) g_pSLU1->SetPBRI(!m_modPBRI.IsNegated());
+    //   SLU1 however, DOES support split baud rates.  It's allowed to use
+    // either the /TXBAUD, /RXBAUD or /BAUD modifiers, the latter setting
+    // both baud rates at once.
+    if (m_modBaud.IsPresent()) {
+      uint32_t lBaud = m_argBaud.GetNumber();
+      if (!g_pSLU1->SetBaud(lBaud, lBaud)) {
+        CMDERRS("Invalid baud rate " << lBaud);  return false;
+      }
+    } else {
+      //   Note that a zero parameter to SetBaud() means to leave the current
+      // setting unchanged.  That makes our life easier here!
+      if (m_modTxBaud.IsPresent()) {
+        if (!g_pSLU1->SetBaud(m_argTxBaud.GetNumber(), 0)) {
+          CMDERRS("Invalid baud rate " << m_argTxBaud.GetNumber());  return false;
+        }
+      }
+      if (m_modRxBaud.IsPresent()) {
+        if (!g_pSLU1->SetBaud(0, m_argRxBaud.GetNumber())) {
+          CMDERRS("Invalid baud rate " << m_argRxBaud.GetNumber());  return false;
+        }
+      }
+    }
+    if (m_modEnable.IsPresent()) g_pSLU1->Enable(!m_modEnable.IsNegated());
+  } else if (pDevice == g_pIDE) {
+    if (m_modShortDelay.IsPresent()) g_pIDE->SetShortDelay(USTONS(m_argShortDelay.GetNumber()));
+    if (m_modLongDelay.IsPresent()) g_pIDE->SetLongDelay(USTONS(m_argLongDelay.GetNumber()));
+    if (m_modEnable.IsPresent()) g_pIDE->Enable(!m_modEnable.IsNegated());
+  } else if ((pDevice == g_pRTC) && m_modEnable.IsPresent()) {
+    g_pRTC->Enable(!m_modEnable.IsNegated());
+  }
+
+  return true;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////// MISCELLANEOUS COMMANDS /////////////////////////////

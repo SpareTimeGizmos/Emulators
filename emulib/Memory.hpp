@@ -78,6 +78,7 @@ public:
     MEM_NONE  = 0x00,     // memory doesn't exist!
     MEM_READ  = 0x01,     // memory can be read (RAM or ROM)
     MEM_WRITE = 0x02,     // memory can be written (RAM only!)
+    MEM_SLOW  = 0x04,     // memory needs extra access time
     MEM_IO    = 0x40,     // memory is an I/O device (read or write)
     MEM_BREAK = 0x80,     // break on access to this location
     MEM_FLAGS = 0xFF,     // all flag bits
@@ -96,6 +97,7 @@ public:
   virtual word_t CPUread (address_t a) const = 0;
   virtual void CPUwrite (address_t a, word_t d) = 0;
   virtual bool IsBreak (address_t a) const = 0;
+  virtual bool IsSlow (address_t a) const = 0;
 //virtual bool IsIO (address_t a) const = 0;
 //virtual bool IsReadable (address_t a) const = 0;
 //virtual bool IsWritable (address_t a) const = 0;
@@ -148,6 +150,10 @@ public:
   // Return true if an address break is set at this location ...
   virtual bool IsBreak (address_t a) const override
     {assert(IsValid(a));  return ISSET(GetFlags(a), MEM_BREAK);}
+  // Return true if this address needs extra access time ...
+  //   Exactly what that means varies according to the implementation!
+  virtual bool IsSlow (address_t a) const override
+    {assert(IsValid(a));  return ISSET(GetFlags(a), MEM_SLOW);}
   // RAM is defined as R/W memory that's NOT an I/O device ...
   virtual bool IsRAM (address_t a) const
     {assert(IsValid(a));  return (GetFlags(a) & (MEM_READ|MEM_WRITE|MEM_IO)) == (MEM_READ|MEM_WRITE);}
@@ -192,6 +198,8 @@ public:
   void SetRAM (address_t nFirst=0) {SetRAM(nFirst, ADDRESS(Size()-1));}
   void SetROM (address_t nFirst, address_t nLast) {SetFlags(nFirst, nLast, MEM_READ, MEM_WRITE);}
   void SetROM (address_t nFirst=0) {SetROM(nFirst, ADDRESS(Size()-1));}
+  void SetSlow (address_t nFirst, address_t nLast) {SetFlags(nFirst, nLast, MEM_SLOW, 0);}
+  void SetSlow (address_t nFirst=0) {SetSlow(nFirst, ADDRESS(Size()-1));}
   void SetIO  (address_t nFirst, address_t nLast) {SetFlags(nFirst, nLast, MEM_IO|MEM_READ|MEM_WRITE, 0);}
   void SetIO  (address_t nFirst) {SetIO(nFirst, nFirst);}
   void SetNXM (address_t nFirst, address_t nLast) {SetFlags(nFirst, nLast, 0, MEM_FLAGS);}

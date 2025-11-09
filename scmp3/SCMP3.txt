@@ -1,0 +1,101 @@
+SCMP3 COMMANDS
+---------------
+  E*XAMINE xxxx              - display just address xxxx (hex)
+     xxxx-xxxx               - display all addresses in the range
+     xxxx, xxxx, ...         - display multiple addresses or ranges
+     reg                     - display individual CPU register(s)
+     RE*GISTERS              - display all registers
+     /I*NSTRUCTION           - disassemble INS807x instructions
+  Registers - PC, SP, P2, P3, A, E, T, S
+
+  D*EPOSIT xxxx xx           - deposit one byte
+     xxxx xx, xx, ...        - deposit several bytes
+     reg xxxx                - deposit in a register
+
+  LO*AD filename             - load binary or .HEX file into RAM or ROM
+  SA*VE filename             - save RAM or ROM to a binary or .HEX file
+     /FORMAT=BINARY|INTEL    - set file format
+     /BAS*E=xxxx             - load/save relative to base address (octal)
+     /COU*NT=nnnnn           - number of bytes to save (decimal)
+     /RA*M                   - load/save data from RAM address space
+     /RO*M                   -   "   "     "    "  ROM    "      "
+     /OVER*WRITE             - don't prompt if file already exists (SAVE only!)
+
+  SE*T BRE*AKPOINT xxxx      - set breakpoint at address xxxx
+  CL*EAR BRE*AKPOINT xxxx    - clear   "      "     "     "
+  CL*EAR BRE*AKPOINTS        - clear all breakpoints
+  SH*OW BRE*AKPOINTS         - show breakpoints
+
+  RU*N [xxxx]                - clear CPU and start running at PC=xxxx
+  C*ONTINUE                  - resume execution at current PC
+  ST*EP [nnnn]               - single step and trace nnnn instructions
+  RES*ET                     - reset CPU and all devices
+
+  SH*OW CPU                  - show CPU details
+  CL*EAR CPU                 - reset the CPU only
+  SE*T CPU
+     /BRE*AK=nnn             - set break character to ASCII code nnn
+     /OPCODE=STOP|IGNORE     -  "    "   "     "   "  opcodes
+     /CLO*CK=nnnnnnnnn       - set CPU clock frequency (in Hz!)
+
+  SH*OW MEM*ORY              - show memory configuration
+  CL*EAR MEM*ORY             - clear (zero) ALL memory (RAM and ROM!)
+     /RAM                    - clear RAM only
+     /ROM                    - clear ROM only
+  SET MEM*ORY xxxx-yyyy      - set memory characteristics for xxxx to yyyy
+     /RAM                    - memory is read/write
+     /ROM                    - memory is read only
+     /NORAM/NOROM            - memory doesn't exist
+     /FAST                   - memory is internal to the INX807x
+     /SLOW                   - memory is external
+
+  ATT*ACH SER*IAL sense flag - attach software (bit banged) serial port
+  SHOW SER*IAL               - show software serial characteristics
+  SET SER*IAL                - set software serial port characteristics
+     /BAUD=nnnn              - simulated baud rate
+     /[NO]INVERT=TX|RX|BOTH  - specify polarity of serial signals
+     /POLL=nnnn              - polling delay in microseconds
+  DET*ACH SER*IAL            - disconnect software serial emulation
+
+STANDARD UI COMMANDS
+--------------------
+  SET WINDOW
+        /TIT*LE="string"     - set window title string
+        /FORE*GROUND=color   - set window foreground color
+        /BACK*GROUND=color   -  "     "   background   "
+        /X=nnn               - set window X position in pixels
+        /Y=nnn               -  "     "   Y     "     "   "
+        /W*IDTH=nn           - set window width in character columns
+        /H*EIGHT=nn          -  "     "   height "     "       "
+  Colors - BLACK, ORANGE, GRAY, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, WHITE
+        DARK_BLUE, DARK_GREEN, DARK_CYAN, DARK_RED, DARK_MAGENTA, LIGHT_GRAY
+
+  SET LOG*GING
+        /FI*LE=filename      - enable logging to a file
+        /NOFI*LE             - disable   "    "  "  "
+        /APP*END             - append to existing log file
+        /OVER*WRITE          - overwrite    "      "   "
+        /LEV*EL=level        - set logging level (with /FILE or /CONSOLE)
+        /CON*SOLE            - enable logging to console terminal
+  SHOW LOG*GING              - show current log settings
+  Levels - ERR*ORS, WARN*INGS, DEB*UG, TRA*CE
+
+  DEF*INE name "substitution"- define alias commands
+  UNDEF*INE name             - undefule "      "
+  SHOW ALIAS name            - show definition for "name"
+  SHOW ALIAS*ES              - show all aliases
+
+  DO filename                - execute commands from a file
+
+  HELP name                  - show arguments and modifiers for one verb
+  HELP                       - show a list of all verbs
+
+  EXIT                       - terminate the program
+  QUIT                       - ditto
+
+STANDARD COMMAND LINE OPTIONS
+-----------------------------
+  -d                 - set console message level to DEBUG
+  -l filename        - start logging to a file
+  -x                 - run as a detached process
+  filename           - take commands from a script file

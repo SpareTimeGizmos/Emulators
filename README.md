@@ -6,7 +6,8 @@
 * SBC1802 COSMAC SBC
 * SBC6120 PDP-8 SBC
 * PicoElf v2 by Mike Riley
-* SC/MP w/NIBL BASIC SBC
+* SC/MP-II (INS8060) w/NIBL BASIC SBC
+* SC/MP-III (INS8070) w/MIBL2 BASIC in ROM
 * S2650 w/PIPBUG SBC
 
 ## CPUs
@@ -18,7 +19,7 @@
 * Harris HD6120 PDP-8
 * Signetics 2650
 * Intel 8080/8085
-* National SC/MP
+* National SC/MP, SC/MP-II and SC/MP-III
 
 ## Peripherals
   There are also emulations, with varying degrees of accuracy and completeness, for various peripherheral chips, including

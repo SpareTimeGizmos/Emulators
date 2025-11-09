@@ -46,6 +46,8 @@
 // 
 // REVISION HISTORY:
 // 20-JAN-20  RLA   New file.
+//  3-SEP-25  RLA   Fix DevWrite() so writes to the odd data byte work.
+// 16-SEP-25  RLA   Add m_fEnabled to simulate no IDE interface.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -75,6 +77,7 @@ CIDE11::CIDE11 (address_t nPort, CEventQueue *pEvents)
   //--
   CIDE::Set8BitMode(0, true);
   CIDE::Set8BitMode(1, true);
+  m_fEnabled = true;
 }
 
 word_t CIDE11::DevRead (address_t nAddress)
@@ -92,18 +95,25 @@ word_t CIDE11::DevRead (address_t nAddress)
   //   And lastly, references to the high order (odd) byte always return zeros
   // EXCEPT for the data register.  The real SBCT11 has a 16 bit data bus, and
   // reading both high and low bytes of the data register should work.
+  //
+  //   The m_fEnabled flag controls whether this chip is present, and if it is
+  // false then the simulation behaves as if the IDE interface is not installed.
+  // That basically means all writes are ignored, and all reads return 0177777.
   //--
   assert(nAddress >= GetBasePort());
   address_t nRegister = nAddress - GetBasePort();
   assert(nRegister < PORT_COUNT);
-  if (ISSET(nRegister, WRITE_ONLY)) return 0;
-  nRegister ^= CS1FX;
-  if (ISODD(nRegister)) {
-    if (nRegister == DATA_REG+1) return CIDE::DevRead(DATA_REG);
-    return 0;
-  } else {
-    return CIDE::DevRead((nRegister>>1) & 0xF);
-  }
+  if (m_fEnabled) {
+    if (ISSET(nRegister, WRITE_ONLY)) return 0;
+    nRegister ^= CS1FX;
+    if (ISODD(nRegister)) {
+      if (nRegister == DATA_REG+1) return CIDE::DevRead(DATA_REG);
+      return 0;
+    } else {
+      return CIDE::DevRead((nRegister>>1) & 0xF);
+    }
+  } else
+    return 0xFF;
 }
 
 void CIDE11::DevWrite (address_t nAddress, word_t bData)
@@ -116,10 +126,22 @@ void CIDE11::DevWrite (address_t nAddress, word_t bData)
   assert(nAddress >= GetBasePort());
   address_t nRegister = nAddress - GetBasePort();
   assert(nRegister < PORT_COUNT);
-  nRegister ^= CS1FX;
-  if (ISODD(nRegister)) {
-    if (nRegister == DATA_REG+1) CIDE::DevWrite(DATA_REG, bData);
-  } else {
-    CIDE::DevWrite((nRegister >> 1) & 0xF, bData);
+  if (m_fEnabled) {
+    nRegister ^= CS1FX;
+    if (ISODD(nRegister)) {
+      if ((nRegister & 0xF) == DATA_REG+1) CIDE::DevWrite(DATA_REG, bData);
+    } else {
+      CIDE::DevWrite((nRegister >> 1) & 0xF, bData);
+    }
   }
+}
+
+void CIDE11::ShowDevice (ostringstream &ofs) const
+{
+  //++
+  //--
+  if (m_fEnabled)
+    CIDE::ShowDevice(ofs);
+  else
+    ofs << FormatString("IDE DISABLED");
 }

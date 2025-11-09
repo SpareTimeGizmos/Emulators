@@ -25,6 +25,7 @@
 // REVISION HISTORY:
 //  4-MAR-20  RLA   New file.
 // 30-AUG-22  RLA   Delete objects in the reverse order of creation!
+// 15-AUG-25  RLA   Change RTC to the "new PCB" version.
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -126,9 +127,9 @@ int main (int argc, char *argv[])
   //   Set the console window defaults - foreground and background color,
   // scrolling buffer size, title, and icon ...
   g_pConsole->SetTitle("SBCT11 Emulator v%d", T11VER);
-  g_pConsole->SetBufferSize(132, 2000);
-  g_pConsole->SetWindowSize(132, 40);
-  g_pConsole->SetColors(CConsoleWindow::GREEN, CConsoleWindow::BLACK);
+  //g_pConsole->SetBufferSize(132, 2000);
+  //g_pConsole->SetWindowSize(132, 40);
+  //g_pConsole->SetColors(CConsoleWindow::GREEN, CConsoleWindow::BLACK);
   g_pLog->SetDefaultConsoleLevel(CLog::WARNING);
 
   // We're finally ready to say hello ...
@@ -152,7 +153,7 @@ int main (int argc, char *argv[])
   g_pSLU0 = DBGNEW CDC319("SLU0", SLU0_BASE, g_pEvents, g_pConsole, g_pCPU);
   g_pIOpage->Install(g_pSLU0);
   g_pSLU0->AttachInterrupt((*g_pPIC)[SLU0_XMT_IRQ], (*g_pPIC)[SLU0_RCV_IRQ]);
-  g_pRTC = DBGNEW CRTC11(RTC_BASE, g_pEvents, true);
+  g_pRTC = DBGNEW CRTC11(RTC_BASE, g_pEvents);
   g_pIOpage->Install(g_pRTC);
   g_pPPI = DBGNEW CPPI11("PPI", PPI_BASE, g_pEvents);
   g_pIOpage->Install(g_pPPI);
@@ -167,12 +168,7 @@ int main (int argc, char *argv[])
   g_pSLU1 = DBGNEW CDC319("SLU1", SLU1_BASE, g_pEvents, g_pTU58);
   g_pIOpage->Install(g_pSLU1);
   g_pSLU1->AttachInterrupt((*g_pPIC)[SLU1_XMT_IRQ], (*g_pPIC)[SLU1_RCV_IRQ]);
-  //   RT11 seems a bit sensitive to the speed of the TU58 serial port.  If
-  // too fast then it will hang during the boot process, but interestingly
-  // it will also hang if it's too slow.  Empirically these numbers work! 
-  g_pSLU1->SetCharacterDelay(HZTONS(20000));
-  g_pSLU1->SetPollDelay     (HZTONS( 2000));
-
+ 
   //   Lastly, create the command line parser.  If a startup script was
   // specified on the command line, now is the time to execute it...
   g_pParser = DBGNEW CCmdParser(PROGRAM, CUI::g_aVerbs, &ConfirmExit, g_pConsole);
@@ -208,8 +204,8 @@ shutdown:
   delete g_pEvents;       // the event queue
 #ifdef _DEBUG
 #ifdef _WIN32
-  system("pause");
-  _CrtDumpMemoryLeaks();
+  //system("pause");
+  //_CrtDumpMemoryLeaks();
 #endif
 #endif
   return 0;

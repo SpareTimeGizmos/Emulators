@@ -1,4 +1,2 @@
-SET LOG/CONSOLE/LEVEL=WARNING
-LOAD boots11.hex/FORMAT=INTEL/ROM
-RUN
-
+set log/console/level=warning
+load boots11.hex/format=intel/rom

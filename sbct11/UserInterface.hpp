@@ -79,12 +79,14 @@ private:
   static CCmdArgNumber      m_argBreakpoint, m_argOptBreakpoint;
   static CCmdArgNumber      m_argBaseAddress, m_argByteCount, m_argDelay;
   static CCmdArgNumber      m_argPollDelay, m_argBreakChar, m_argCPUmode;
-  static CCmdArgName        m_argRegisterName, m_argOptDeviceName;
+  static CCmdArgName        m_argRegisterName, m_argOptDeviceName, m_argDeviceName;
   static CCmdArgNumberRange m_argAddressRange;
   static CCmdArgRangeOrName m_argExamineDeposit;
   static CCmdArgList        m_argRangeList, m_argRangeOrNameList;
   static CCmdArgList        m_argDataList, m_argDelayList;
   static CCmdArgNumber      m_argUnit, m_argCapacity;
+  static CCmdArgNumber      m_argBaud, m_argTxBaud, m_argRxBaud;
+  static CCmdArgNumber      m_argLongDelay, m_argShortDelay;
 
   // Modifier definitions ...
 private:
@@ -108,6 +110,13 @@ private:
   static CCmdModifier m_modAppend;
   static CCmdModifier m_modCRLF;
   static CCmdModifier m_modDelayList;
+  static CCmdModifier m_modBaud;
+  static CCmdModifier m_modTxBaud;
+  static CCmdModifier m_modRxBaud;
+  static CCmdModifier m_modShortDelay;
+  static CCmdModifier m_modLongDelay;
+  static CCmdModifier m_modEnable;
+  static CCmdModifier m_modPBRI;
 
   // Verb definitions ...
 private:
@@ -146,12 +155,16 @@ private:
   static CCmdVerb m_cmdRun, m_cmdContinue, m_cmdStep;
   static CCmdVerb m_cmdReset, m_cmdHalt;
 
-  // SET, CLEAR and SHOW DEVICE, CPU amd MEMORY ...
+  // SET, CLEAR and SHOW CPU amd MEMORY ...
   static CCmdModifier * const m_modsSetCPU[];
-  static CCmdArgument * const m_argsShowDevice[];
   static CCmdVerb m_cmdClearMemory, m_cmdShowMemory;
-  static CCmdVerb m_cmdClearDevice, m_cmdShowDevice;
   static CCmdVerb m_cmdClearCPU, m_cmdSetCPU, m_cmdShowCPU;
+
+  // SET, CLEAR and SHOW DEVICE ...
+  static CCmdArgument * const m_argsShowDevice[];
+  static CCmdArgument * const m_argsSetDevice[];
+  static CCmdModifier * const m_modsSetDevice[];
+  static CCmdVerb m_cmdClearDevice, m_cmdShowDevice, m_cmdSetDevice;
 
   // CLEAR, SET and SHOW verb definitions ...
   static CCmdVerb * const g_aClearVerbs[];
@@ -187,6 +200,7 @@ private:
   static bool DoShowBreakpoints(CCmdParser& cmd);
   static bool DoShowMemory(CCmdParser &cmd), DoClearMemory(CCmdParser &cmd);
   static bool DoShowDevice (CCmdParser &cmd), DoClearDevice(CCmdParser &cmd);
+  static bool DoSetDevice (CCmdParser &cmd);
   static bool DoSetCPU(CCmdParser &cmd), DoClearCPU(CCmdParser &cmd);
   static bool DoShowCPU(CCmdParser &cmd);
   static bool DoShowTime(CCmdParser &cmd), DoShowVersion(CCmdParser &cmd);
@@ -209,7 +223,7 @@ private:
   static unsigned RunSimulation (uint32_t nSteps=0);
   static CDevice *FindDevice (const string sDevice);
   static bool ShowAllDevices();
-  static void ShowOneDevice (bool fHeading, const class CDevice *pDevice);
+  static void ShowOneDevice (const class CDevice *pDevice, bool fHeading=false);
   static string ShowBreakpoints (const CGenericMemory *pMemory);
   static bool DoCloseSend(CCmdParser &cmd), DoCloseReceive(CCmdParser &cmd);
 };

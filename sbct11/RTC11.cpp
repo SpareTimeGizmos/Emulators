@@ -51,6 +51,7 @@
 // 
 // REVISION HISTORY:
 // 11-JUL-22  RLA   New file.
+// 15-AUG-25  RLA   Ignore writes to the high (odd) byte on the new PCB!
 //--
 //000000001111111111222222222233333333334444444444555555555566666666667777777777
 //234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -86,6 +87,7 @@ CRTC11::CRTC11 (address_t nBase, CEventQueue *pEvents, bool fOldPCB)
   assert(pEvents != NULL);
   m_p12887 = DBGNEW C12887("RTC11", 0, pEvents, false);
   m_bAddress = 0;  m_fOldPCB = fOldPCB;  m_wCache = 0;
+  m_fEnabled = true;
 }
 
 CRTC11::~CRTC11()
@@ -123,6 +125,10 @@ uint8_t CRTC11::ReadByte (bool fOdd)
   // read the NVR twice"?  Well, some of the registers have side effects when
   // read, and some of the registers can change over time.  Remember, this
   // chip is a clock, after all!
+  //
+  //   And all of that is only true for the old PCBs.  The new PCBs map the
+  // DS12887 correctly as a byte wide device connected only to the low DAL
+  // bits.  Reading the odd (upper) byte returns junk.
   //--
   if (m_fOldPCB) {
     if (!fOdd) {
@@ -130,8 +136,16 @@ uint8_t CRTC11::ReadByte (bool fOdd)
       return LOBYTE(m_wCache);
     } else
       return HIBYTE (m_wCache);
-  } else
-    return m_p12887->DevRead(m_bAddress);
+  } else {
+    if (fOdd) {
+      LOGF(WARNING, "Attempt to read the odd RTC byte");
+      return 0xFF;
+    } else {
+      uint8_t bData = m_p12887->DevRead(m_bAddress);
+      LOGF(DEBUG, "RTC read address=%d, data=0x%02X", m_bAddress, bData);
+      return bData;
+    }
+  }
 }
 
 void CRTC11::WriteByte (uint8_t bData, bool fOdd)
@@ -143,6 +157,10 @@ void CRTC11::WriteByte (uint8_t bData, bool fOdd)
   // low (even addressed) byte first, so we have to cache that.  Then, only
   // when the high byte is written, can we actually write to the NVR.  This
   // system isn't foolproof, but it's good enough to fool the SBCT11 firmware.
+  // 
+  //   And again, as with ReadByte(), that's only true for the old PCBs.  The
+  // revision C and later PCBs correctly map the DS12887 to the low DAL byte
+  // only.  Writing to the upper (odd) byte does nothing.
   //--
   if (m_fOldPCB) {
     if (!fOdd)
@@ -151,8 +169,14 @@ void CRTC11::WriteByte (uint8_t bData, bool fOdd)
       m_wCache = MKWORD(bData, LOBYTE(m_wCache));
       m_p12887->DevWrite(m_bAddress, LOBYTE(m_wCache>>1));
     }
-  } else
-    m_p12887->DevWrite(m_bAddress, bData);
+  } else {
+    if (fOdd) {
+      LOGF(WARNING, "Attempt to write the odd RTC byte");
+    } else {
+      LOGF(DEBUG, "RTC write address=%d, data=0x%02X", m_bAddress, bData);
+      m_p12887->DevWrite(m_bAddress, bData);
+    }
+  }
 }
 
 uint8_t CRTC11::DevRead (address_t nPort)
@@ -161,13 +185,20 @@ uint8_t CRTC11::DevRead (address_t nPort)
   //   Read a byte from the RTC and deal with the issues caused by the old
   // PCB layout bug.  Note that only the "READ" register is readable - any
   // reads from any others always return 0.
+  //
+  //   The m_fEnabled flag controls whether this chip is present, and if it is
+  // false then the simulation behaves as if the RTC chip is not installed.
+  // That basically means all writes are ignored, and all reads return 0177777.
   //--
   assert(nPort >= GetBasePort());
-  switch (nPort-GetBasePort()) {
-    case REG_READ:    return ReadByte(false);
-    case REG_READ+1:  return ReadByte(true);
-    default:          return 0;
-  }
+  if (m_fEnabled) {
+    switch (nPort-GetBasePort()) {
+      case REG_READ:    return ReadByte(false);
+      case REG_READ+1:  return ReadByte(true);
+      default:          return 0;
+    }
+  } else
+    return 0xFF;
 }
 
 void CRTC11::DevWrite (address_t nPort, uint8_t bData)
@@ -179,11 +210,13 @@ void CRTC11::DevWrite (address_t nPort, uint8_t bData)
   // bits.  Even on the old PCB addresses never overflow into the upper byte.
   //--
   assert(nPort >= GetBasePort());
-  switch (nPort-GetBasePort()) {
-    case REG_ADDRESS:  m_bAddress = (m_fOldPCB ? bData>>1 : bData) & 0x7F;  break;
-    case REG_WRITE:    WriteByte(bData, false);  break;
-    case REG_WRITE+1:  WriteByte(bData, true);   break;
-    default: break;
+  if (m_fEnabled) {
+    switch (nPort-GetBasePort()) {
+      case REG_ADDRESS:  m_bAddress = (m_fOldPCB ? bData>>1 : bData) & 0x7F;  break;
+      case REG_WRITE:    WriteByte(bData, false);  break;
+      case REG_WRITE+1:  WriteByte(bData, true);   break;
+      default: break;
+    }
   }
 }
 
@@ -191,5 +224,8 @@ void CRTC11::ShowDevice (ostringstream &ofs) const
 {
   //++
   //--
-  m_p12887->ShowDevice(ofs);
+  if (m_fEnabled)
+    m_p12887->ShowDevice(ofs);
+  else
+    ofs << FormatString("RTC DISABLED");
 }

@@ -171,9 +171,10 @@ size_t CGenericMemory::CountFlags (address_t nFirst) const
   // sound a bit obscure, but it's used to figure out and print the memory map.
   //--
   assert(IsValid(nFirst));  size_t nLast;
-  uint8_t bFlags = GetFlags(nFirst) & (MEM_READ|MEM_WRITE|MEM_IO);
+  const uint8_t bMask = MEM_READ | MEM_WRITE | MEM_IO | MEM_SLOW;
+  uint8_t bFlags = GetFlags(nFirst) & bMask;
   for (nLast = nFirst+1;  nLast < Size();  ++nLast) {
-    if ((GetFlags(ADDRESS(nLast)) & (MEM_READ|MEM_WRITE)) != bFlags) break;
+    if ((GetFlags(ADDRESS(nLast)) & bMask) != bFlags) break;
   }
   return nLast-nFirst;
 }
