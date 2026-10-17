@@ -85,6 +85,13 @@ $(TARGET):	$(OBJECTS)
 	@$(LD) $(LDFLAGS) -o $(TARGET) $(OBJECTS) $(LIBRARIES)
 
 
+# Create the object directory if it doesn't exist ...
+$(OBJECTS):	| $(OBJDIR)
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+
 # Rules to compile C and C++ files ...
 $(OBJDIR)/%.o: %.cpp
 	@echo Compiling $<
