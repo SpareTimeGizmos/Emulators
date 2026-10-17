@@ -143,6 +143,8 @@ public:
   virtual void CPUwrite (address_t a, word_t d);
   virtual bool IsBreak (address_t a) const;
   virtual bool IsIO (address_t a) const;
+  // The SBC1802 has no slow memory ...
+  virtual bool IsSlow (address_t a) const override {return false;}
 
 public:
   // Public CMeoryMap methods ...
